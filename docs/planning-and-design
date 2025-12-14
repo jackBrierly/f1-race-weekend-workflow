@@ -1,11 +1,11 @@
 Problem Statement:
 
-
 F1 teams make hundreds of decisions during a race weekend, particularly around car setup changes during Practice and Qualifying. These decisions involve multiple engineers, strict time constraints, and session-based rules that restrict what can be changed once a session begins or a setup becomes locked. In practice, information is often spread across messages, spreadsheets, and verbal communication, making it difficult to clearly track what changed, who approved it, and why.
 
 This lack of a single, reliable source of truth can lead to confusion about the current car setup, duplicate or conflicting changes, unclear responsibility for approvals, difficulty reviewing decisions after a session, and mistakes caused by time pressure or miscommunication.
 
 The goal of this project is to design and build a workflow and decision-tracking system that provides clarity and structure during a race weekend. The system should show the current stage of the weekend, maintain versioned car setups, allow engineers to propose changes, require approvals from authorised roles, enforce session-based rules, and maintain an audit trail of all decisions. By doing so, the system aims to reduce operational errors and give teams a clear, shared understanding of decisions made under pressure.
+
 
 Roles:
 
