@@ -1,0 +1,219 @@
+Problem Statement:
+
+
+F1 teams make hundreds of decisions during a race weekend, particularly around car setup changes during Practice and Qualifying. These decisions involve multiple engineers, strict time constraints, and session-based rules that restrict what can be changed once a session begins or a setup becomes locked. In practice, information is often spread across messages, spreadsheets, and verbal communication, making it difficult to clearly track what changed, who approved it, and why.
+
+This lack of a single, reliable source of truth can lead to confusion about the current car setup, duplicate or conflicting changes, unclear responsibility for approvals, difficulty reviewing decisions after a session, and mistakes caused by time pressure or miscommunication.
+
+The goal of this project is to design and build a workflow and decision-tracking system that provides clarity and structure during a race weekend. The system should show the current stage of the weekend, maintain versioned car setups, allow engineers to propose changes, require approvals from authorised roles, enforce session-based rules, and maintain an audit trail of all decisions. By doing so, the system aims to reduce operational errors and give teams a clear, shared understanding of decisions made under pressure.
+
+Roles:
+
+Engineer
+- Proposes car setup changes based on driver feedback and session observations.
+- Creates change requests with a clear description and reason.
+- Adds notes and feedback during sessions.
+- Cannot approve changes or bypass locked states.
+
+Lead Engineer
+- Reviews and approves or rejects proposed setup changes.
+- Authorised to create new setup versions by approving change requests.
+- Responsible for decisions made during time-critical sessions.
+- Can transition the race weekend workflow between stages (e.g. Practice to Qualifying), which controls what actions are allowed at that time.
+
+
+Viewer
+- Has read-only access to the system.
+- Can view current setups, decision history, and audit logs.
+- Cannot create, modify, or approve any changes.
+
+
+Workflow Stages:
+
+Practice
+- Initial setup creation and experimentation.
+- Engineers can freely edit and create setup versions.
+- No approval is required for changes.
+- Notes and feedback are recorded for later review.
+
+Qualifying
+- Focused on performance with stricter controls.
+- Existing setups become locked and cannot be edited directly.
+- Engineers may propose setup changes via change requests.
+- Proposed changes must be reviewed and approved by the Lead Engineer.
+- All approved changes create a new versioned setup.
+- All decisions are logged in the audit trail.
+
+Race
+- Maximum stability and reliability.
+- Setups are fully locked and cannot be changed.
+- Only notes and observations can be recorded.
+- No setup changes or approvals are permitted.
+
+Review
+- Post-session analysis and reflection.
+- Engineers and Leads can review setup versions, decisions, and outcomes.
+- No changes to setups are allowed.
+- Used to evaluate what decisions were effective and why.
+
+
+Data Models:
+
+Team
+- Purpose: Represents an organisation (e.g. a racing team) that owns weekends, setups, and decisions.
+- Fields:
+  - id: unique identifier
+  - name: e.g. "McLaren"
+  - createdAt: timestamp
+
+Weekend
+- Purpose: Represents a single race weekend and the current workflow state.
+- Fields:
+  - id: unique identifier
+  - name: e.g. "Silverstone GP"
+  - teamId: link to Team
+  - stage: one of Practice, Qualifying, Race, Review
+  - segment: optional sub-stage (e.g. Q1, Q2, Q3)
+  - createdAt: timestamp
+  - updatedAt: timestamp
+
+SetupVersion
+- Purpose: A versioned snapshot of the car setup at a point in time.
+- Fields:
+  - id: unique identifier
+  - weekendId: link to Weekend
+  - teamId: link to Team (denormalised for easy filtering)
+  - versionNumber: integer (e.g. 5)
+  - session: Practice, Qualifying, or Race
+  - status: Draft, Approved, Locked
+  - parameters: key-value map of setup values (kept small in MVP)
+  - createdByName: user-entered name
+  - createdByRole: Engineer or Lead Engineer
+  - createdAt: timestamp
+
+ChangeRequest
+- Purpose: A proposed change to the current setup that requires review/approval.
+- Fields:
+  - id: unique identifier
+  - weekendId: link to Weekend
+  - teamId: link to Team (denormalised for easy filtering)
+  - fromSetupId: the setup version the change is based on
+  - status: Pending, Approved, Rejected
+  - changes: list of { field, fromValue, toValue }
+  - reason: free text (required)
+  - appliesTo: e.g. "Q2 Run 2" (optional)
+  - createdByName: user-entered name
+  - createdByRole: Engineer
+  - createdAt: timestamp
+  - decidedByName: name of approver (Lead Engineer)
+  - decidedAt: timestamp
+  - decisionNote: optional reason for rejection or additional context
+
+Note
+- Purpose: Captures driver feedback or engineer observations tied to a stage/session.
+- Fields:
+  - id: unique identifier
+  - weekendId: link to Weekend
+  - teamId: link to Team (denormalised for easy filtering)
+  - type: DriverFeedback or EngineerNote
+  - session: Practice, Qualifying, or Race
+  - segment: optional (e.g. Q1/Q2/Q3)
+  - text: free text (required)
+  - createdByName: user-entered name
+  - createdByRole: Engineer or Lead Engineer
+  - createdAt: timestamp
+
+AuditEvent
+- Purpose: An immutable event log for traceability ("who did what and why").
+- Fields:
+  - id: unique identifier
+  - weekendId: link to Weekend
+  - teamId: link to Team (denormalised for easy filtering)
+  - action: e.g. StageChanged, ChangeProposed, ChangeApproved, ChangeRejected, SetupLocked
+  - entityType: Weekend, SetupVersion, ChangeRequest, Note
+  - entityId: id of the entity affected
+  - actorName: user-entered name
+  - actorRole: Engineer, Lead Engineer, or Viewer
+  - timestamp: timestamp
+  - details: JSON metadata (e.g. previousStage, newStage, versionNumber, reason)
+
+
+
+API Endpoints (REST):
+
+Conventions
+- All endpoints use JSON request/response bodies.
+- Role + name are provided by the client on each request (prototype approach) and enforced server-side.
+- Team context is provided by the client and used to scope all data to a single team.
+- The API enforces workflow rules (stage locks, permissions) and returns appropriate HTTP status codes.
+
+
+Teams
+- GET /teams
+  - List all teams.
+- POST /teams
+  - Create a new team.
+  - Body: { "name": "McLaren" }
+
+Weekend / Workflow
+- GET /teams/{teamId}/weekends
+  - List all weekends for a team.
+- POST /teams/{teamId}/weekends
+  - Create a new weekend for a team.
+  - Body: { "name": "Silverstone GP" }
+- GET /teams/{teamId}/weekends/{weekendId}
+  - Get weekend summary including current stage/segment.
+- POST /teams/{teamId}/weekends/{weekendId}/transition
+  - Transition the weekend workflow stage/segment (Lead Engineer only).
+  - Body: { "toStage": "Qualifying", "toSegment": "Q2" }
+
+Setup Versions
+- GET /teams/{teamId}/weekends/{weekendId}/setups
+  - List setup versions for the weekend.
+  - Query params: session=Practice|Qualifying|Race, latest=true|false
+- GET /setups/{setupId}
+  - Get a single setup version.
+- POST /teams/{teamId}/weekends/{weekendId}/setups
+  - Create a setup version (Practice only; in Qualifying/Race versions are created via approval).
+  - Body: { "session": "Practice", "parameters": { ... }, "status": "Draft" }
+
+Change Requests (Propose / Approve)
+- GET /teams/{teamId}/weekends/{weekendId}/change-requests
+  - List change requests for the weekend.
+  - Query params: status=Pending|Approved|Rejected, session=Practice|Qualifying|Race (optional)
+- POST /teams/{teamId}/weekends/{weekendId}/change-requests
+  - Propose a setup change (Engineer only; primarily used in Qualifying).
+  - Body: { "fromSetupId": "...", "changes": [ { "field": "...", "fromValue": 0, "toValue": 1 } ], "reason": "...", "appliesTo": "Q2 Run 2" }
+- POST /change-requests/{changeRequestId}/approve
+  - Approve a proposed change (Lead Engineer only) and create a new SetupVersion.
+  - Body: { "decisionNote": "optional" }
+- POST /change-requests/{changeRequestId}/reject
+  - Reject a proposed change (Lead Engineer only).
+  - Body: { "decisionNote": "reason for rejection" }
+
+Notes
+- GET /teams/{teamId}/weekends/{weekendId}/notes
+  - List notes for the weekend.
+  - Query params: session=Practice|Qualifying|Race, segment=Q1|Q2|Q3 (optional)
+- POST /teams/{teamId}/weekends/{weekendId}/notes
+  - Create a note (Engineer or Lead Engineer).
+  - Body: { "type": "DriverFeedback", "session": "Qualifying", "segment": "Q2", "text": "..." }
+
+Audit Log
+- GET /teams/{teamId}/weekends/{weekendId}/audit
+  - List audit events for the weekend.
+  - Query params: limit=number (optional)
+
+
+Definition of Done (Sprint 0)
+
+The planning phase (Sprint 0) is considered complete when:
+
+- The problem being solved is clearly articulated and scoped.
+- User roles and responsibilities are defined and understood.
+- Workflow stages and their rules are explicitly documented.
+- Core data models are defined with clear purposes and fields.
+- REST API endpoints are specified and aligned with the workflow.
+- Key design decisions (e.g. no generic DELETE/UPDATE, role-based access) are documented and justified.
+
+At this point, the system design is stable enough to begin implementation, with no ambiguity around scope, behaviour, or responsibilities.
