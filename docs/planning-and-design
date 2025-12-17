@@ -21,7 +21,6 @@ Lead Engineer
 - Responsible for decisions made during time-critical sessions.
 - Can transition the race weekend workflow between stages (e.g. Practice to Qualifying), which controls what actions are allowed at that time.
 
-
 Viewer
 - Has read-only access to the system.
 - Can view current setups, decision history, and audit logs.
@@ -136,7 +135,6 @@ AuditEvent
   - actorRole: Engineer, Lead Engineer, or Viewer
   - timestamp: timestamp
   - details: JSON metadata (e.g. previousStage, newStage, versionNumber, reason)
-
 
 
 API Endpoints (REST):
