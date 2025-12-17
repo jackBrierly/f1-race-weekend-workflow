@@ -30,30 +30,44 @@ Viewer
 Workflow Stages:
 
 Practice
-- Initial setup creation and experimentation.
-- Engineers can freely edit and create setup versions.
-- No approval is required for changes.
+- Focused on experimentation and data gathering.
+- Setup changes can be created and iterated without a formal approval step enforced by the system.
+- Decisions are collaborative and overseen by senior engineers, though this oversight is not explicitly modelled.
 - Notes and feedback are recorded for later review.
+Permissions:
+- Engineers: create setup versions, record notes.
+- Lead Engineers: create setup versions, record notes.
+- Approvals: not enforced by the system.
 
 Qualifying
 - Focused on performance with stricter controls.
-- Existing setups become locked and cannot be edited directly.
-- Engineers may propose setup changes via change requests.
-- Proposed changes must be reviewed and approved by the Lead Engineer.
-- All approved changes create a new versioned setup.
-- All decisions are logged in the audit trail.
+- Engineers can no longer directly edit the current car setup.
+- Engineers may propose setup changes for review.
+- A Lead Engineer must approve or reject each proposed change.
+- Approved changes create a new setup version to preserve traceability.
+Permissions:
+- Engineers: propose changes, record notes.
+- Lead Engineers: approve or reject changes.
+- Direct setup edits: not allowed.
 
 Race
-- Maximum stability and reliability.
-- Setups are fully locked and cannot be changed.
-- Only notes and observations can be recorded.
-- No setup changes or approvals are permitted.
+- Focused on stability, reliability, and execution.
+- Core setup parameters cannot be structurally changed.
+- Limited operational adjustments may occur but are not versioned.
+- Strategy notes and observations are recorded.
+Permissions:
+- Engineers: record notes only.
+- Lead Engineers: record notes only.
+- Setup changes: not allowed.
 
 Review
 - Post-session analysis and reflection.
-- Engineers and Leads can review setup versions, decisions, and outcomes.
-- No changes to setups are allowed.
-- Used to evaluate what decisions were effective and why.
+- Teams review setup versions, decisions, and outcomes.
+- No changes to setups are permitted.
+Permissions:
+- Engineers: read-only access.
+- Lead Engineers: read-only access.
+- Modifications: not allowed.
 
 
 Data Models:
