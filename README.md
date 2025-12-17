@@ -17,9 +17,9 @@ This system provides a single source of truth for:
 ## Key Concepts
 
 - **Workflow-driven design:** The system behaviour changes based on the current weekend stage (Practice, Qualifying, Race, Review).
-- **Role-based access:** Engineers propose changes, Lead Engineers approve them, and all actions are permission-checked server-side. Users operate within a team context and provide a role and name for accountability and audit logging.
-- **Team-scoped data:** All weekends, setups, and decisions belong to a specific team, ensuring clear separation, ownership, and accountability.
-- **Audit-first approach:** Core entities are immutable; decisions are recorded as explicit events rather than silent updates.
+- **Role-based access:** Engineers propose changes, Lead Engineers approve them, and all actions are permission-checked server-side; actions are recorded with a user name for accountability.
+- **Team-scoped data:** Each team uses the system independently, with its own weekends, setups, and decisions.
+- **Audit-first approach:** Core entities are immutable; decisions are recorded as explicit actions so changes are visible and traceable, rather than silently overwriting data.
 - **API-first architecture:** A REST API enforces workflow rules and serves as the single source of truth for the frontend.
 
 ## Repository Structure
