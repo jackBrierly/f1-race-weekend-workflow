@@ -225,12 +225,12 @@ Definition of Done (Sprint 0)
 
 The planning phase (Sprint 0) is considered complete when:
 
-- The problem being solved is clearly articulated and scoped.
-- User roles and responsibilities are defined and understood.
-- Workflow stages and their rules are explicitly documented.
-- Core data models are defined with clear purposes and fields.
-- REST API endpoints are specified and aligned with the workflow.
-- Key design decisions (e.g. no generic DELETE/UPDATE, role-based access) are documented and justified.
+/ The problem being solved is clearly articulated and scoped.
+/ User roles and responsibilities are defined and understood.
+/ Workflow stages and their rules are explicitly documented.
+/ Core data models are defined with clear purposes and fields.
+/ REST API endpoints are specified and aligned with the workflow.
+/ Key design decisions (e.g. no generic DELETE/UPDATE, role-based access) are documented and justified.
 - API contract is documented with request/response shapes and error codes.
 - Workflow diagram is created to visualise stage transitions and approval flow.
 
