@@ -36,11 +36,16 @@ The repository currently contains Sprint 0 planning and design documentation. Im
 - Sprint 0: Planning & Design — **In Progress**
 - Sprint 1: Core Workflow Implementation — **Planned**
 
-## Tech Stack (Planned)
+## Tech Stack
 
-- Frontend: React
-- Backend: REST API (Node.js / Express or equivalent)
-- Data Storage: Relational database (PostgreSQL or equivalent)
+- Frontend: React (JavaScript)
+  Used to build a state-driven user interface that clearly reflects the current workflow stage, permissions, and decisions.
+-	Backend: Node.js + Express
+  Provides a lightweight REST API that enforces workflow rules, handles approvals, and acts as the single source of truth for the system.
+- Database: PostgreSQL
+  Stores structured, relational data such as teams, race weekends, setup versions, change requests, and audit events.
+-	API: REST + JSON
+  Defines clear, predictable endpoints for frontend–backend communication, making workflow actions explicit and enforceable.
 
 ## Notes
 
