@@ -159,10 +159,12 @@ AuditEvent
 API Endpoints (REST):
 
 Conventions
-- All endpoints use JSON request/response bodies.
-- Role + name are provided by the client on each request (prototype approach) and enforced server-side.
-- Each request specifies the team being worked on, and the API restricts all reads and writes to data belonging to that team.
-- The API enforces workflow rules (stage locks, permissions) and returns appropriate HTTP status codes.
+- Content-Type: application/json
+- All request and response bodies are JSON.
+- Each request includes actorName and actorRole (prototype approach) which are validated server-side.
+- teamId is provided in the URL to scope all reads and writes to a single team.
+- The API enforces workflow rules (stage restrictions, permissions) and returns appropriate HTTP status codes.
+- Error response shape: { "error": "CODE", "message": "Human readable message" }
 
 Teams
 - GET /teams
@@ -219,6 +221,289 @@ Audit Log
 - GET /teams/{teamId}/weekends/{weekendId}/audit
   - List audit events for the weekend.
   - Query params: limit=number (optional)
+
+
+API Contract
+
+Common Error Codes
+- 400 Bad Request: missing/invalid fields in request body
+- 403 Forbidden: role not allowed to perform action
+- 404 Not Found: team/weekend/entity not found
+- 409 Conflict: workflow rule violated (wrong stage, locked, invalid transition)
+- 500 Internal Server Error: unexpected server error
+
+
+TEAMS
+
+POST /teams
+Purpose:
+- Create a new team.
+Role rule:
+- Allowed roles: any (or omit role checks for MVP).
+Request:
+- Body: { "name": "McLaren" }
+Success Response:
+- 201 Created
+- Body: { "id": "t1", "name": "McLaren", "createdAt": "..." }
+Errors:
+- 400: name missing/empty
+
+GET /teams
+Purpose:
+- List all teams.
+Role rule:
+- Allowed roles: Engineer, LeadEngineer, Viewer.
+Success Response:
+- 200 OK
+- Body: { "teams": [ { "id": "t1", "name": "McLaren", "createdAt": "..." } ] }
+
+
+WEEKEND / WORKFLOW
+
+POST /teams/{teamId}/weekends
+Purpose:
+- Create a new race weekend for a team.
+Role rule:
+- Allowed roles: Engineer, LeadEngineer.
+Request:
+- Body: { "name": "Silverstone GP" }
+Success Response:
+- 201 Created
+- Body: {
+    "id": "w1",
+    "teamId": "t1",
+    "name": "Silverstone GP",
+    "stage": "Practice",
+    "segment": null,
+    "createdAt": "...",
+    "updatedAt": "..."
+  }
+Errors:
+- 400: name missing/empty
+- 403: role not allowed
+- 404: team not found
+
+GET /teams/{teamId}/weekends
+Purpose:
+- List all weekends for a team.
+Role rule:
+- Allowed roles: Engineer, LeadEngineer, Viewer.
+Success Response:
+- 200 OK
+- Body: { "weekends": [ { "id": "w1", "name": "Silverstone GP", "stage": "Practice", "segment": null, "createdAt": "...", "updatedAt": "..." } ] }
+Errors:
+- 404: team not found
+
+GET /teams/{teamId}/weekends/{weekendId}
+Purpose:
+- Retrieve a weekend summary including current stage/segment.
+Role rule:
+- Allowed roles: Engineer, LeadEngineer, Viewer.
+Success Response:
+- 200 OK
+- Body: {
+    "id": "w1",
+    "teamId": "t1",
+    "name": "Silverstone GP",
+    "stage": "Qualifying",
+    "segment": "Q2",
+    "createdAt": "...",
+    "updatedAt": "..."
+  }
+Errors:
+- 404: team or weekend not found (or mismatch)
+
+POST /teams/{teamId}/weekends/{weekendId}/transition
+Purpose:
+- Transition the weekend workflow stage/segment (controls what actions are allowed).
+Role rule:
+- Allowed roles: LeadEngineer only.
+Request:
+- Body: { "toStage": "Qualifying", "toSegment": "Q2" }
+Success Response:
+- 200 OK
+- Body: { "id": "w1", "stage": "Qualifying", "segment": "Q2", "updatedAt": "..." }
+Errors:
+- 403: not LeadEngineer
+- 404: team/weekend not found
+- 409: invalid transition (e.g. Race -> Practice)
+
+
+SETUP VERSIONS
+
+GET /teams/{teamId}/weekends/{weekendId}/setups?session=Practice&latest=false
+Purpose:
+- List setup versions for a weekend (optionally filter by session, optionally fetch only latest).
+Role rule:
+- Allowed roles: Engineer, LeadEngineer, Viewer.
+Success Response:
+- 200 OK
+- Body: {
+    "setups": [
+      { "id": "s1", "versionNumber": 1, "session": "Practice", "state": "Mutable", "changeRequestId": null, "parameters": { ... }, "createdByName": "...", "createdAt": "..." }
+    ]
+  }
+Errors:
+- 404: team/weekend not found
+
+GET /setups/{setupId}
+Purpose:
+- Get a single setup version.
+Role rule:
+- Allowed roles: Engineer, LeadEngineer, Viewer.
+Success Response:
+- 200 OK
+- Body: {
+    "id": "s1",
+    "weekendId": "w1",
+    "teamId": "t1",
+    "versionNumber": 1,
+    "session": "Practice",
+    "state": "Mutable",
+    "changeRequestId": null,
+    "parameters": { ... },
+    "createdByName": "...",
+    "createdAt": "..."
+  }
+Errors:
+- 404: setup not found
+
+POST /teams/{teamId}/weekends/{weekendId}/setups
+Purpose:
+- Create a new setup version directly (Practice only).
+Role rule:
+- Allowed roles: Engineer, LeadEngineer.
+Request:
+- Body: { "session": "Practice", "parameters": { ... } }
+Success Response:
+- 201 Created
+- Body: { "id": "s2", "versionNumber": 2, "session": "Practice", "state": "Mutable", "changeRequestId": null, "parameters": { ... }, "createdByName": "...", "createdAt": "..." }
+Errors:
+- 403: role not allowed
+- 404: team/weekend not found
+- 409: not allowed outside Practice
+
+
+CHANGE REQUESTS (PROPOSE / APPROVE / REJECT)
+
+GET /teams/{teamId}/weekends/{weekendId}/change-requests?status=Pending
+Purpose:
+- List change requests for a weekend (filter by status).
+Role rule:
+- Allowed roles: Engineer, LeadEngineer, Viewer.
+Success Response:
+- 200 OK
+- Body: {
+    "changeRequests": [
+      { "id": "cr1", "status": "Pending", "baseSetupId": "s2", "changes": [ ... ], "reason": "...", "appliesTo": "...", "createdByName": "...", "createdAt": "..." }
+    ]
+  }
+Errors:
+- 404: team/weekend not found
+
+POST /teams/{teamId}/weekends/{weekendId}/change-requests
+Purpose:
+- Propose a setup change for review (used mainly in Qualifying).
+Role rule:
+- Allowed roles: Engineer only.
+Request:
+- Body: {
+    "baseSetupId": "s2",
+    "changes": [ { "field": "frontWing", "fromValue": 5, "toValue": 7 } ],
+    "reason": "More front end bite",
+    "appliesTo": "Q2 Run 2"
+  }
+Success Response:
+- 201 Created
+- Body: { "id": "cr1", "status": "Pending", "baseSetupId": "s2", "changes": [ ... ], "reason": "...", "appliesTo": "...", "createdByName": "...", "createdAt": "..." }
+Errors:
+- 403: not Engineer
+- 404: team/weekend/base setup not found
+- 409: stage does not allow proposals
+
+POST /change-requests/{changeRequestId}/approve
+Purpose:
+- Approve a proposed change and create a new setup version.
+Role rule:
+- Allowed roles: LeadEngineer only.
+Request:
+- Body: { "decisionNote": "optional" }
+Success Response:
+- 200 OK
+- Body: {
+    "changeRequest": { "id": "cr1", "status": "Approved", "decidedByName": "...", "decidedAt": "...", "decisionNote": "..." },
+    "newSetupVersion": { "id": "s3", "versionNumber": 3, "session": "Qualifying", "state": "Finalised", "changeRequestId": "cr1", "parameters": { ... }, "createdAt": "..." }
+  }
+Errors:
+- 403: not LeadEngineer
+- 404: change request not found
+- 409: already decided OR wrong stage OR base setup mismatch
+
+POST /change-requests/{changeRequestId}/reject
+Purpose:
+- Reject a proposed change.
+Role rule:
+- Allowed roles: LeadEngineer only.
+Request:
+- Body: { "decisionNote": "reason for rejection" }
+Success Response:
+- 200 OK
+- Body: { "id": "cr1", "status": "Rejected", "decidedByName": "...", "decidedAt": "...", "decisionNote": "..." }
+Errors:
+- 403: not LeadEngineer
+- 404: change request not found
+- 409: already decided OR wrong stage
+
+
+NOTES
+
+GET /teams/{teamId}/weekends/{weekendId}/notes?session=Qualifying&segment=Q2
+Purpose:
+- List notes for a weekend (optionally filter by session/segment).
+Role rule:
+- Allowed roles: Engineer, LeadEngineer, Viewer.
+Success Response:
+- 200 OK
+- Body: {
+    "notes": [
+      { "id": "n1", "type": "DriverFeedback", "session": "Qualifying", "segment": "Q2", "text": "...", "createdByName": "...", "createdAt": "..." }
+    ]
+  }
+Errors:
+- 404: team/weekend not found
+
+POST /teams/{teamId}/weekends/{weekendId}/notes
+Purpose:
+- Create a note (driver feedback or engineer observation).
+Role rule:
+- Allowed roles: Engineer, LeadEngineer.
+Request:
+- Body: { "type": "DriverFeedback", "session": "Qualifying", "segment": "Q2", "text": "Rear feels loose on entry" }
+Success Response:
+- 201 Created
+- Body: { "id": "n1", "type": "DriverFeedback", "session": "Qualifying", "segment": "Q2", "text": "...", "createdByName": "...", "createdAt": "..." }
+Errors:
+- 400: text missing/empty
+- 403: Viewer not allowed
+- 404: team/weekend not found
+
+
+AUDIT LOG
+
+GET /teams/{teamId}/weekends/{weekendId}/audit?limit=50
+Purpose:
+- List audit events for traceability (“who did what and why”).
+Role rule:
+- Allowed roles: Engineer, LeadEngineer, Viewer.
+Success Response:
+- 200 OK
+- Body: {
+    "events": [
+      { "id": "a1", "action": "ChangeProposed", "entityType": "ChangeRequest", "entityId": "cr1", "actorName": "...", "actorRole": "Engineer", "timestamp": "...", "details": { ... } }
+    ]
+  }
+Errors:
+- 404: team/weekend not found
 
 
 Definition of Done (Sprint 0)
