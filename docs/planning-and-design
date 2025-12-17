@@ -520,3 +520,6 @@ The planning phase (Sprint 0) is considered complete when:
 / Workflow diagram is created to visualise stage transitions and approval flow.
 
 At this point, the system design is stable enough to begin implementation, with no ambiguity around scope, behaviour, or responsibilities.
+
+Sprint 1 Goal:
+Implement the core backend skeleton that enforces the workflow rules and exposes the main API endpoints.
