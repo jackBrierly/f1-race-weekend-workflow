@@ -516,7 +516,7 @@ The planning phase (Sprint 0) is considered complete when:
 / Core data models are defined with clear purposes and fields.
 / REST API endpoints are specified and aligned with the workflow.
 / Key design decisions (e.g. no generic DELETE/UPDATE, role-based access) are documented and justified.
-- API contract is documented with request/response shapes and error codes.
-- Workflow diagram is created to visualise stage transitions and approval flow.
+/ API contract is documented with request/response shapes and error codes.
+/ Workflow diagram is created to visualise stage transitions and approval flow.
 
 At this point, the system design is stable enough to begin implementation, with no ambiguity around scope, behaviour, or responsibilities.
