@@ -91,36 +91,41 @@ Weekend
   - updatedAt: timestamp
 
 SetupVersion
-- Purpose: A versioned snapshot of the car setup at a point in time.
+- Purpose: A saved snapshot of the car setup that the team can reference (“what the setup was at this moment”).
+- Key idea: SetupVersions are facts, not proposals.
 - Fields:
   - id: unique identifier
+  - changeRequestId: optional link to ChangeRequest (set only when created via approval)
   - weekendId: link to Weekend
-  - teamId: link to Team (denormalised for easy filtering)
+  - teamId: link to Team
   - versionNumber: integer (e.g. 5)
-  - session: Practice, Qualifying, or Race
-  - status: Draft, Approved, Locked
+  - session: Practice | Qualifying | Race
+  - state: Mutable | Finalised | Locked
+    - Mutable: setup values may be changed directly (Practice only)
+    - Finalised: setup values cannot be changed; new versions require approval (Qualifying)
+    - Locked: setup values cannot be changed and no new versions may be created (Race)
   - parameters: key-value map of setup values (kept small in MVP)
   - createdByName: user-entered name
-  - createdByRole: Engineer or Lead Engineer
+  - createdByRole: Engineer | Lead Engineer
   - createdAt: timestamp
 
 ChangeRequest
-- Purpose: A proposed change to the current setup that requires review/approval.
+- Purpose: A proposed change to the setup that is waiting for a decision.
+- Key idea: ChangeRequests are proposals; if approved, they create a NEW SetupVersion.
 - Fields:
   - id: unique identifier
   - weekendId: link to Weekend
-  - teamId: link to Team (denormalised for easy filtering)
-  - fromSetupId: the setup version the change is based on
-  - status: Pending, Approved, Rejected
+  - teamId: link to Team
+  - baseSetupId: the setup version the proposal is based on
+  - status: Pending | Approved | Rejected
   - changes: list of { field, fromValue, toValue }
   - reason: free text (required)
-  - appliesTo: e.g. "Q2 Run 2" (optional)
+  - appliesTo: optional label (e.g. "Q2 Run 2")
   - createdByName: user-entered name
-  - createdByRole: Engineer
   - createdAt: timestamp
-  - decidedByName: name of approver (Lead Engineer)
-  - decidedAt: timestamp
-  - decisionNote: optional reason for rejection or additional context
+  - decidedByName: Lead Engineer name (if decided)
+  - decidedAt: timestamp (if decided)
+  - decisionNote: optional context (especially for rejection)
 
 Note
 - Purpose: Captures driver feedback or engineer observations tied to a stage/session.
@@ -156,9 +161,8 @@ API Endpoints (REST):
 Conventions
 - All endpoints use JSON request/response bodies.
 - Role + name are provided by the client on each request (prototype approach) and enforced server-side.
-- Team context is provided by the client and used to scope all data to a single team.
+- Each request specifies the team being worked on, and the API restricts all reads and writes to data belonging to that team.
 - The API enforces workflow rules (stage locks, permissions) and returns appropriate HTTP status codes.
-
 
 Teams
 - GET /teams
