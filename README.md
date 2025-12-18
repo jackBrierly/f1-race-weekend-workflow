@@ -33,8 +33,8 @@ The repository currently contains Sprint 0 planning and design documentation. Im
 
 ## Project Status
 
-- Sprint 0: Planning & Design — **In Progress**
-- Sprint 1: Core Workflow Implementation — **Planned**
+- Sprint 0: Planning & Design — **Complete**
+- Sprint 1: Backend Foundations & Workflow Enforcement — **In Progress**
 
 ## Tech Stack
 
