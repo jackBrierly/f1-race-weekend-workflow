@@ -521,5 +521,20 @@ The planning phase (Sprint 0) is considered complete when:
 
 At this point, the system design is stable enough to begin implementation, with no ambiguity around scope, behaviour, or responsibilities.
 
+
 Sprint 1 Goal:
-Implement the core backend skeleton that enforces the workflow rules and exposes the main API endpoints.
+Implement the core backend skeleton that enforces the workflow rules and exposes the core API endpoints.
+
+Definition of Done (Sprint 1)
+
+Sprint 1 is considered complete when:
+
+- The backend server starts successfully and runs locally.
+- A health endpoint responds with 200 OK.
+- Teams can be created and listed via the API.
+- Code is organised into routes, controllers, and models.
+- Core API behaviour matches the documented contract.
+- Invalid requests return appropriate HTTP error codes.
+- All work is committed with clear, incremental commit messages.
+
+At this point, the core backend foundation is in place, the workflow rules are enforced server-side, and the system is stable enough to begin adding additional features and persistence without ambiguity around behaviour or responsibilities.
