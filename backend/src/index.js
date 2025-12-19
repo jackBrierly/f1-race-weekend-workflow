@@ -1,13 +1,13 @@
 const express = require('express')
 const app = express()
 
+// Parse JSON request bodies
+app.use(express.json())
+
 // Import the teams router
 const teamsRouter = require("./routes/teams")
 // Forward all '/teams' to the teams router
 app.use("/teams", teamsRouter)
-
-// Parse JSON request bodies
-app.use(express.json())
 
 // Basic health check endpoint for uptime monitoring
 app.get('/health', (req, res) => {
