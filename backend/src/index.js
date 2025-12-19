@@ -5,7 +5,7 @@ const app = express()
 app.use(express.json())
 
 // Import the teams router
-const teamsRouter = require("./routes/teams")
+const teamsRouter = require("./routes/teams.routes")
 // Forward all '/teams' to the teams router
 app.use("/teams", teamsRouter)
 
