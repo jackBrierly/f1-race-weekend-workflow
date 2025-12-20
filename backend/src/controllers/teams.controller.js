@@ -1,24 +1,22 @@
 // Controllers handle HTTP request/response logic
 // For Sprint 1 we keep storage in-memory (replace with a DB later)
-
-let nextTeamId = 1
-const teams = []
+const { teams, getNextTeamId } = require('../data/teams.data')
 
 /**
  * POST /teams
- * Body: { "name": "Mercedes" }
+ * Body: { name': 'Mercedes' }
  */
 function createTeam(req, res) {
-  // Extract the `name` value from the JSON request body (e.g. { "name": "McLaren" })
-  const { name } = req.body || {}
+  // Extract the `name` value from the JSON request body (e.g. { 'name': 'McLaren' })
+  const { name: name } = req.body || {}
 
   // Basic input validation
-  if (!name || typeof name !== "string" || name.trim().length === 0) {
-    return res.status(400).json({ "error": { "code": "BAD_REQUEST", "message": "Name is required" } })
+  if (!name || typeof name !== 'string' || name.trim().length === 0) {
+    return res.status(400).json({ 'error': { 'code': 'BAD_REQUEST', 'message': 'Team name is required' } })
   }
 
   const team = {
-    id: nextTeamId++,
+    id: getNextTeamId(),
     name: name.trim(),
     createdAt: new Date().toISOString(),
   }

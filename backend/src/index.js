@@ -5,16 +5,16 @@ const app = express()
 app.use(express.json())
 
 // Import the teams router
-const teamsRouter = require("./routes/teams.routes")
+const teamsRouter = require('./routes/teams.routes')
 // Forward all '/teams' to the teams router
-app.use("/teams", teamsRouter)
+app.use('/teams', teamsRouter)
 
 // Basic health check endpoint for uptime monitoring
 app.get('/health', (req, res) => {
-    res.json({status: 'A-OK'})
+    res.json({status: 'ok'})
 })
 
 // Start the HTTP server
-app.listen(3000, (req, res) => {
+app.listen(3000, () => {
     console.log('Server running on port 3000')
 })
