@@ -1,0 +1,6 @@
+const ERROR_CODES = {
+  BAD_REQUEST: 'BAD_REQUEST',
+  NOT_FOUND: 'NOT_FOUND',
+  DUPLICATE: 'DUPLICATE',
+}
+module.exports = { ERROR_CODES }

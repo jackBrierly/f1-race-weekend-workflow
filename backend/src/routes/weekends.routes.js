@@ -1,15 +1,21 @@
 const express = require('express')
+// Merge params so :teamId from the parent route is available here
 const router = express.Router({ mergeParams: true })
 
+// Controller functions that handle the request/response
 const {
     createWeekend,
     listWeekends,
+    getWeekend,
 } = require('../controllers/weekends.controller')
 
-// POST /teams/:teamId/weekends
+// POST /teams/:teamId/weekends - create a weekend for a team
 router.post('/', createWeekend)
 
-// GET /teams/:teamId/weekends
+// GET /teams/:teamId/weekends - list weekends for a team
 router.get('/', listWeekends)
+
+// GET /teams/:teamId/weekends/:weekendId - get a single weekend
+router.get('/:weekendId', getWeekend)
 
 module.exports = router
