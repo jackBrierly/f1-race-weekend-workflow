@@ -1,7 +1,14 @@
 const { ERROR_CODES } = require('../constants/error-codes')
+const { SEGMENTS } = require('../constants/segments')
+const {
+    canTransition,
+    initialiseWeekend,
+    isValidSegment,
+    isValidStage,
+    canTransitionSegment,
+} = require('../models/weekends.model')
 
 // In memory storage
-let nextWeekendId = 1
 const weekends = []
 const { teams } = require('../data/teams.data')
 
@@ -16,7 +23,7 @@ function invalidInputErrorMessage(res, message) {
 }
 
 // Get and validate Teams ID from the URL
-function getTeamId(req, res) {
+function getTeamIdOr400(req, res) {
     // Read the teamId from the URL params (eg /teams/1/weekends)
     const teamId = Number.parseInt(req.params.teamId, 10)
     // If teamId is missing, not a number, or <= 0, return a 400 error
@@ -28,7 +35,7 @@ function getTeamId(req, res) {
     return teamId
 }
 // Get and validate Weekends ID from the URL
-function getWeekendId(req, res) {
+function getWeekendIdOr400(req, res) {
     // Read the weekendId from the URL params (eg /teams/1/weekends/2)
     const weekendId = Number.parseInt(req.params.weekendId, 10)
     // If weekendId is missing, not a number, or <= 0, return a 400 error
@@ -39,6 +46,17 @@ function getWeekendId(req, res) {
     }
     return weekendId
 }
+// Find a weekend by teamId and weekendId or return a 404
+function getWeekendOr404(res, teamId, weekendId) {
+    const weekend = weekends.find(
+        (w) => w.teamId === teamId && w.id === weekendId
+    )
+    if (!weekend) {
+        res.status(404).json({ 'error': { 'code': ERROR_CODES.NOT_FOUND, 'message': 'Weekend not found' } })
+        return null
+    }
+    return weekend
+}
 
 /**
  * POST /teams/:teamId/weekends
@@ -46,7 +64,7 @@ function getWeekendId(req, res) {
  */
 function createWeekend(req, res) {
     // Get the teamId from the URL (eg /teams/1/weekends)
-    const teamId = getTeamId(req, res)
+    const teamId = getTeamIdOr400(req, res)
 
     // Stop if teamId is invalid
     if (teamId === null) { return }
@@ -72,13 +90,9 @@ function createWeekend(req, res) {
         return res.status(409).json({ 'error': { 'code': ERROR_CODES.DUPLICATE, 'message': 'This weekend already exists' } })
     }
 
-    // Create the weekend object
-    const weekend = {
-        id: nextWeekendId++,
-        name: name.trim(),
-        createdAt: new Date().toISOString(),
-        teamId: teamId,
-    }
+    // Initialise the weekend object
+    // id, teamId, name, stage, segment, createdAt, updatedAt
+    const weekend = initialiseWeekend({ teamId, name })
 
     // Store the new weekend in memory
     weekends.push(weekend)
@@ -92,7 +106,7 @@ function createWeekend(req, res) {
  */
 function listWeekends(req, res) {
     // Get the teamId from the URL (eg /teams/1/weekends)
-    const teamId = getTeamId(req, res)
+    const teamId = getTeamIdOr400(req, res)
     // Stop if teamId is invalid
     if (teamId === null) { return }
 
@@ -106,11 +120,12 @@ function listWeekends(req, res) {
     return res.json(teamWeekends)
 }
 
+// GET /teams/:teamId/weekends/:weekendId
 function getWeekend(req, res) {
     // Get the teamId and weekendId from the URL
-    const teamId = getTeamId(req, res)
-    const weekendId = getWeekendId(req, res)
-    // Stop if either id is invalid
+    const teamId = getTeamIdOr400(req, res)
+    const weekendId = getWeekendIdOr400(req, res)
+    // Stop if either id is invalid, the error response would have been sent in the getTeamId/ 
     if (teamId === null || weekendId === null) { return }
 
     // Make sure the team exists before searching
@@ -120,14 +135,62 @@ function getWeekend(req, res) {
     }
 
     // Find the weekend that matches both teamId and weekendId
-    const weekend = weekends.find(
-        (w) => w.teamId === teamId && w.id === weekendId
-    )
-    if (!weekend) {
-        return res.status(404).json({ 'error': { 'code': ERROR_CODES.NOT_FOUND, 'message': 'Weekend not found' } })
-    }
+    const weekend = getWeekendOr404(res, teamId, weekendId)
+    if (!weekend) { return }
 
     return res.json(weekend)
+}
+
+// POST /teams/{teamId}/weekends/{weekendId}/transition - transition weekend stage
+// Body: { 'toStage': 'Qualifying', 'toSegment': 'Q2' }
+function transitionWeekendStage(req, res) {
+    const { toStage: toStage, toSegment: toSegment } = req.body || {}
+
+    // Get the teamId and weekendId from the URL
+    const teamId = getTeamIdOr400(req, res)
+    const weekendId = getWeekendIdOr400(req, res)
+    // Stop if either id is invalid
+    if (teamId === null || weekendId === null) { return }
+
+    // Make sure the team exists before searching
+    const teamExists = teams.some((team) => team.id === teamId)
+    if (!teamExists) {
+        return res.status(404).json({ 'error': { 'code': ERROR_CODES.NOT_FOUND, 'message': 'Team not found' } })
+    }
+
+    // Reuse the same weekend lookup logic
+    let weekend = getWeekendOr404(res, teamId, weekendId)
+    if (!weekend) { return }
+
+    // check permisions with team leader
+
+    const fromStage = weekend.stage
+
+    if (!isValidStage(toStage)) {
+        return res.status(409).json({ 'error': { 'code': ERROR_CODES.INVALID_TRANSITION, 'message': 'Invalid stage name' } })
+    }
+    if (!isValidSegment(toSegment)) {
+        return res.status(409).json({ 'error': { 'code': ERROR_CODES.INVALID_TRANSITION, 'message': 'Invalid segment' } })
+    }
+
+    if (!canTransition(fromStage, toStage)) {
+        return res.status(409).json({
+            error: {
+                code: ERROR_CODES.INVALID_TRANSITION,
+                message: 'Workflow transition is not allowed from the current stage',
+            },
+        })
+    }
+
+    // updates stage + updatedAt
+    weekend.stage = toStage
+
+    if (canTransitionSegment(weekend.segment, toSegment, weekend.stage)) {
+        weekend.segment = toSegment
+    }
+    weekend.updatedAt = new Date().toISOString()
+    
+    return res.status(201).json(weekend)
 }
 
 
@@ -135,4 +198,5 @@ module.exports = {
     createWeekend,
     listWeekends,
     getWeekend,
+    transitionWeekendStage,
 }
