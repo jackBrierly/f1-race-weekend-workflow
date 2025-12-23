@@ -11,6 +11,7 @@ const {
 // In memory storage
 const weekends = []
 const { teams } = require('../data/teams.data')
+const { WORKFLOW_STAGES } = require('../constants/workflow-stages')
 
 // Check if a name is missing or empty after trimming
 function isInvalidName(name) {
@@ -120,6 +121,7 @@ function listWeekends(req, res) {
     return res.json(teamWeekends)
 }
 
+
 // GET /teams/:teamId/weekends/:weekendId
 function getWeekend(req, res) {
     // Get the teamId and weekendId from the URL
@@ -140,6 +142,7 @@ function getWeekend(req, res) {
 
     return res.json(weekend)
 }
+
 
 // POST /teams/{teamId}/weekends/{weekendId}/transition - transition weekend stage
 // Body: { 'toStage': 'Qualifying', 'toSegment': 'Q2' }
@@ -162,18 +165,18 @@ function transitionWeekendStage(req, res) {
     let weekend = getWeekendOr404(res, teamId, weekendId)
     if (!weekend) { return }
 
-    // check permisions with team leader
+    // NEED TO check permisions with team leader
 
     const fromStage = weekend.stage
 
     if (!isValidStage(toStage)) {
-        return res.status(409).json({ 'error': { 'code': ERROR_CODES.INVALID_TRANSITION, 'message': 'Invalid stage name' } })
+        return res.status(400).json({ 'error': { 'code': ERROR_CODES.INVALID_TRANSITION, 'message': 'Invalid stage name' } })
     }
     if (!isValidSegment(toSegment)) {
-        return res.status(409).json({ 'error': { 'code': ERROR_CODES.INVALID_TRANSITION, 'message': 'Invalid segment' } })
+        return res.status(400).json({ 'error': { 'code': ERROR_CODES.INVALID_TRANSITION, 'message': 'Invalid segment' } })
     }
 
-    if (!canTransition(fromStage, toStage)) {
+    if (!canTransition(fromStage, toStage, weekend.segment)) {
         return res.status(409).json({
             error: {
                 code: ERROR_CODES.INVALID_TRANSITION,
@@ -185,9 +188,20 @@ function transitionWeekendStage(req, res) {
     // updates stage + updatedAt
     weekend.stage = toStage
 
-    if (canTransitionSegment(weekend.segment, toSegment, weekend.stage)) {
-        weekend.segment = toSegment
+    // this is so we know the false is because the segment transition is invalid, not because we don't want to change it
+    if (toSegment !== undefined) {
+        if (canTransitionSegment(weekend.segment, toSegment, weekend.stage)) {
+            weekend.segment = toSegment
+        } else {
+            return res.status(409).json({
+                error: {
+                    code: ERROR_CODES.INVALID_TRANSITION,
+                    message: 'Segment transition is not allowed from the current stage',
+                },
+            })
+        }
     }
+
     weekend.updatedAt = new Date().toISOString()
     
     return res.status(201).json(weekend)

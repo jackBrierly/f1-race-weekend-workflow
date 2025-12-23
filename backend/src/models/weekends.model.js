@@ -5,7 +5,7 @@
  */
 
 const { WORKFLOW_STAGES_ORDER, WORKFLOW_STAGES } = require('../constants/workflow-stages')
-const { SEGMENTS_ORDER } = require('../constants/segments')
+const { SEGMENTS_ORDER, SEGMENTS } = require('../constants/segments')
 
 let id = 0
 
@@ -18,9 +18,13 @@ function isValidStage(stage) {
 // Check if a transition is allowed eg Practice -> Qualifying is true, Qualifying -> Review is false
 // This does not belong in the controller as it doesn't change the data;
 // The actual transition still belongs in the controller
-function canTransition(fromStage, toStage) {
+function canTransition(fromStage, toStage, fromSegment) {
     const fromIndex = WORKFLOW_STAGES_ORDER.indexOf(fromStage)
     const toIndex = WORKFLOW_STAGES_ORDER.indexOf(toStage)
+
+    if (fromStage === WORKFLOW_STAGES.QUALIFYING && toStage === WORKFLOW_STAGES.RACE) {
+      return fromSegment === SEGMENTS.Q3
+    }
 
     return toIndex === fromIndex+1
 }
@@ -28,12 +32,11 @@ function canTransition(fromStage, toStage) {
 // Check if a stage is a valid workflow stage
 // This helps avoid magic strings spread throughout the codebase
 function isValidSegment(segment) {
-  console.log(segment)
-  return (SEGMENTS_ORDER.includes(segment) || segment === undefined)
+  return segment === undefined || SEGMENTS_ORDER.includes(segment)
 }
 
 function canTransitionSegment(fromSegment, toSegment, stage) {  
-  if (stage !== WORKFLOW_STAGES.QUALIFYING || toSegment === undefined){
+  if (stage !== WORKFLOW_STAGES.QUALIFYING) {
     return false
   }
 
