@@ -4,6 +4,7 @@ const { resetTeams } = require('../data/teams.data')
 const { resetWeekends } = require('../data/weekends.data')
 const { WORKFLOW_STAGES } = require('../constants/workflow-stages')
 const { PRACTICE_SEGMENTS } = require('../constants/segments')
+const { ROLES } = require('../constants/roles')
 
 // Small helper so we don't repeat POST boilerplate everywhere
 async function createTeam(name) {
@@ -25,7 +26,11 @@ async function getWeekend(teamId, weekendId) {
 async function transitionWeekend(teamId, weekendId, payload) {
     return request(app)
         .post(`/teams/${teamId}/weekends/${weekendId}/transition`)
-        .send(payload)
+        .send({
+            actorName: 'Alex Engineer',
+            actorRole: ROLES.LEAD_ENGINEER,
+            ...payload,
+        })
 }
 
 beforeEach(() => {
@@ -57,7 +62,6 @@ describe('Weekends API', () => {
 
         })
         test('400 when id is <= 0', async () => {
-            const team = await createTeam('Mclaren')
             const res = await createWeekend(0, 'Australia')
             expect(res.statusCode).toBe(400)
 
@@ -205,6 +209,113 @@ describe('Weekends API', () => {
             })
 
             expect(res.statusCode).toBe(409)
+        })
+
+        test('404 when weekend does not exist', async () => {
+            const team = await createTeam('Mclaren')
+
+            const res = await transitionWeekend(team.body.id, 999, {
+                toStage: WORKFLOW_STAGES.PRACTICE,
+                toSegment: PRACTICE_SEGMENTS.P1,
+            })
+
+            expect(res.statusCode).toBe(404)
+        })
+
+        test('400 when teamId is invalid (transition)', async () => {
+            const team = await createTeam('Mclaren')
+            const weekend = await createWeekend(team.body.id, 'Australia')
+
+            const res = await transitionWeekend('bad', weekend.body.id, {
+                toStage: WORKFLOW_STAGES.PRACTICE,
+                toSegment: PRACTICE_SEGMENTS.P1,
+            })
+
+            expect(res.statusCode).toBe(400)
+        })
+
+        test('400 when weekendId is invalid (transition)', async () => {
+            const team = await createTeam('Mclaren')
+            const weekend = await createWeekend(team.body.id, 'Australia')
+
+            const res = await transitionWeekend(team.body.id, 'bad', {
+                toStage: WORKFLOW_STAGES.PRACTICE,
+                toSegment: PRACTICE_SEGMENTS.P1,
+            })
+
+            expect(res.statusCode).toBe(400)
+        })
+
+        test('400 when actor role is missing', async () => {
+            const team = await createTeam('Mclaren')
+            const weekend = await createWeekend(team.body.id, 'Australia')
+
+            const res = await request(app)
+                .post(`/teams/${team.body.id}/weekends/${weekend.body.id}/transition`)
+                .send({
+                    actorName: 'Alex Engineer',
+                    toStage: WORKFLOW_STAGES.PRACTICE,
+                    toSegment: PRACTICE_SEGMENTS.P1,
+                })
+
+            expect(res.statusCode).toBe(400)
+        })
+
+        test('403 when actor role is not lead engineer', async () => {
+            const team = await createTeam('Mclaren')
+            const weekend = await createWeekend(team.body.id, 'Australia')
+
+            const res = await request(app)
+                .post(`/teams/${team.body.id}/weekends/${weekend.body.id}/transition`)
+                .send({
+                    actorName: 'Alex Engineer',
+                    actorRole: ROLES.ENGINEER,
+                    toStage: WORKFLOW_STAGES.PRACTICE,
+                    toSegment: PRACTICE_SEGMENTS.P1,
+                })
+
+            expect(res.statusCode).toBe(403)
+        })
+
+        test('400 when actorName is missing or empty after trimming', async () => {
+
+            const team = await createTeam('Mclaren')
+            const weekend = await createWeekend(team.body.id, 'Australia')
+
+            const res = await request(app)
+                .post(`/teams/${team.body.id}/weekends/${weekend.body.id}/transition`)
+                .send({
+                    actorName: ' ',
+                    actorRole: ROLES.LEAD_ENGINEER,
+                    toStage: WORKFLOW_STAGES.PRACTICE,
+                    toSegment: PRACTICE_SEGMENTS.P1,
+                })
+            expect(res.statusCode).toBe(400)
+        })
+        test('400 when actorName is not a string', async () => {
+            const team = await createTeam('Mclaren')
+            const weekend = await createWeekend(team.body.id, 'Australia')
+
+            const res = await request(app)
+                .post(`/teams/${team.body.id}/weekends/${weekend.body.id}/transition`)
+                .send({
+                    actorName: 123,
+                    actorRole: ROLES.LEAD_ENGINEER,
+                    toStage: WORKFLOW_STAGES.PRACTICE,
+                    toSegment: PRACTICE_SEGMENTS.P1,
+                })
+            expect(res.statusCode).toBe(400)
+        })
+        test('Content-Type is JSON', async () => {
+            const team = await createTeam('Mclaren')
+            const weekend = await createWeekend(team.body.id, 'Australia')
+
+            const res = await transitionWeekend(team.body.id, weekend.body.id, {
+                toStage: WORKFLOW_STAGES.PRACTICE,
+                toSegment: PRACTICE_SEGMENTS.P1,
+            })
+
+            expect(res.headers['content-type']).toEqual(expect.stringContaining('json'))
         })
     })
 

@@ -1,4 +1,5 @@
 const { ERROR_CODES } = require('../constants/error-codes')
+const { ROLES } = require('../constants/roles')
 const {
     canTransition,
     initialiseWeekend,
@@ -144,7 +145,21 @@ function getWeekend(req, res) {
 // POST /teams/{teamId}/weekends/{weekendId}/transition - transition weekend stage
 // Body: { 'toStage': 'Qualifying', 'toSegment': 'Q2' }
 function transitionWeekendStage(req, res) {
-    const { toStage: toStage, toSegment: toSegment } = req.body || {}
+    const { toStage: toStage, toSegment: toSegment, actorRole: actorRole, actorName: actorName } = req.body || {}
+
+    if (!actorRole) {
+        return res.status(400).json({ 'error': { 'code': ERROR_CODES.BAD_REQUEST, 'message': 'actorRole is required' } })
+    }
+
+    if (actorRole !== ROLES.LEAD_ENGINEER) {
+        return res.status(403).json({ 'error': { 'code': ERROR_CODES.FORBIDDEN, 'message': 'Only the Lead Engineer can transition stages' } })
+    }
+
+    if (!actorName || typeof actorName !== 'string' || actorName.trim() === '') {
+        return res.status(400).json({
+            error: { code: ERROR_CODES.BAD_REQUEST, message: 'actorName is required' }
+        })
+    }
 
     // Get the teamId and weekendId from the URL
     const teamId = getTeamIdOr400(req, res)
@@ -169,10 +184,10 @@ function transitionWeekendStage(req, res) {
 
     // Validate inputs early so we can return a clean 400 instead of deeper failures.
     if (!isValidStage(toStage)) {
-        return res.status(400).json({ 'error': { 'code': ERROR_CODES.INVALID_TRANSITION, 'message': 'Invalid stage name' } })
+        return res.status(400).json({ 'error': { 'code': ERROR_CODES.BAD_REQUEST, 'message': 'Invalid stage name' } })
     }
     if (!isValidSegment(toSegment)) {
-        return res.status(400).json({ 'error': { 'code': ERROR_CODES.INVALID_TRANSITION, 'message': 'Invalid segment' } })
+        return res.status(400).json({ 'error': { 'code': ERROR_CODES.BAD_REQUEST, 'message': 'Invalid segment' } })
     }
 
     // Enforce stage progression rules (unless same-stage updates are allowed by the model).
@@ -204,7 +219,7 @@ function transitionWeekendStage(req, res) {
     weekend.stage = toStage
 
     weekend.updatedAt = new Date().toISOString()
-    
+
     return res.status(201).json(weekend)
 }
 
