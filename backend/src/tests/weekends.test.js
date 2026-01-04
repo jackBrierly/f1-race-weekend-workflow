@@ -5,6 +5,7 @@ const { resetWeekends } = require('../data/weekends.data')
 const { WORKFLOW_STAGES } = require('../constants/workflow-stages')
 const { PRACTICE_SEGMENTS } = require('../constants/segments')
 const { ROLES } = require('../constants/roles')
+const { getAuditForWeekend, resetAudit } = require('../data/audit.data')
 
 // Small helper so we don't repeat POST boilerplate everywhere
 async function createTeam(name) {
@@ -36,6 +37,7 @@ async function transitionWeekend(teamId, weekendId, payload) {
 beforeEach(() => {
     resetTeams()
     resetWeekends()
+    resetAudit()
 })
 
 describe('Weekends API', () => {
@@ -306,6 +308,50 @@ describe('Weekends API', () => {
                 })
             expect(res.statusCode).toBe(400)
         })
+
+        test('When a weekend is transitioned, an audit event is created', async () => {
+            const team = await createTeam('Mclaren')
+            const weekend = await createWeekend(team.body.id, 'Australia')
+
+            const transitionRes = await transitionWeekend(team.body.id, weekend.body.id, {
+                toStage: WORKFLOW_STAGES.PRACTICE,
+                toSegment: PRACTICE_SEGMENTS.P1,
+            })
+
+            expect(transitionRes.statusCode).toBe(201)
+
+            const audit = getAuditForWeekend(team.body.id, weekend.body.id)
+
+            expect(audit).toHaveLength(1)
+            expect(audit[0]).toEqual(expect.objectContaining({
+                type: 'WEEKEND_STAGE_TRANSITION',
+                teamId: team.body.id,
+                weekendId: weekend.body.id,
+                actorName: 'Alex Engineer',
+                actorRole: ROLES.LEAD_ENGINEER,
+                fromStage: WORKFLOW_STAGES.PRACTICE,
+                toStage: WORKFLOW_STAGES.PRACTICE,
+                fromSegment: null,
+                toSegment: PRACTICE_SEGMENTS.P1,
+                createdAt: expect.any(String),
+            }))
+        })
+
+        test('When a transition is rejected, no audit event is created', async () => {
+            const team = await createTeam('Mclaren')
+            const weekend = await createWeekend(team.body.id, 'Australia')
+
+            const res = await transitionWeekend(team.body.id, weekend.body.id, {
+                // This should be invalid from PRACTICE at the start
+                toStage: WORKFLOW_STAGES.RACE,
+            })
+
+            expect(res.statusCode).toBe(409)
+
+            const audit = getAuditForWeekend(team.body.id, weekend.body.id)
+            expect(audit).toHaveLength(0)
+        })
+
         test('Content-Type is JSON', async () => {
             const team = await createTeam('Mclaren')
             const weekend = await createWeekend(team.body.id, 'Australia')

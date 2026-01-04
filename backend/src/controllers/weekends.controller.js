@@ -1,5 +1,6 @@
 const { ERROR_CODES } = require('../constants/error-codes')
 const { ROLES } = require('../constants/roles')
+const { AUDIT_TYPES } = require('../constants/audit-types')
 const {
     canTransition,
     initialiseWeekend,
@@ -10,6 +11,7 @@ const {
 
 const { weekends } = require('../data/weekends.data')
 const { teams } = require('../data/teams.data')
+const { logAuditTransition, getNextAuditId } = require('../data/audit.data')
 
 // Check if a name is missing or empty after trimming
 function isInvalidName(name) {
@@ -177,8 +179,6 @@ function transitionWeekendStage(req, res) {
     let weekend = getWeekendOr404(res, teamId, weekendId)
     if (!weekend) { return }
 
-    // TODO: enforce permissions (eg only the owning team can transition).
-
     const fromStage = weekend.stage
     const fromSegment = weekend.segment
 
@@ -219,6 +219,22 @@ function transitionWeekendStage(req, res) {
     weekend.stage = toStage
 
     weekend.updatedAt = new Date().toISOString()
+
+    const weekendTransitionAudit = {
+        type: AUDIT_TYPES.WEEKEND_STAGE_TRANSITION,
+        id: getNextAuditId(),
+        teamId: weekend.teamId,
+        weekendId: weekend.id,
+        actorName: actorName,
+        actorRole: actorRole,
+        fromStage: fromStage,
+        toStage: toStage,
+        fromSegment: fromSegment,
+        toSegment: toSegment,
+        createdAt: weekend.updatedAt,
+    }
+
+    logAuditTransition(weekendTransitionAudit)
 
     return res.status(201).json(weekend)
 }
