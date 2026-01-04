@@ -6,6 +6,7 @@ const router = express.Router()
 const {
   createTeam,
   listTeams,
+  getTeam,
 } = require('../controllers/teams.controller')
 
 // POST /teams - create a new team
@@ -13,6 +14,9 @@ router.post('/', createTeam)
 
 // GET /teams - list all teams
 router.get('/', listTeams)
+
+// GET /teams/:teamId - get a single team
+router.get('/:teamId', getTeam)
 
 const weekendsRouter = require('./weekends.routes')
 // Mount weekends routes under a specific team

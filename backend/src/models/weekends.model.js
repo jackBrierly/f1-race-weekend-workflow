@@ -12,7 +12,7 @@ const {
   PRACTICE_SEGMENTS,
 } = require('../constants/segments')
 
-let id = 0
+const { getNextWeekendId } = require('../data/weekends.data')
 
 // Check if a stage is a valid workflow stage
 // This helps avoid magic strings spread throughout the codebase
@@ -104,12 +104,10 @@ function initialiseWeekend({ teamId, name }) {
   // Use ISO timestamps so values are consistent and DB-friendly
   const now = new Date().toISOString()
 
-  id += 1
-
   // Return a plain object representing the Weekend
   // This is intentionally NOT a class
   return {
-    id,
+    id: getNextWeekendId(),
     teamId,
     name: trimmedName,
 

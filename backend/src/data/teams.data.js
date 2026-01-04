@@ -7,7 +7,13 @@ function getNextTeamId() {
   return nextTeamId++
 }
 
+function resetTeams() {
+  teams.length = 0   // clear array in-place
+  nextTeamId = 1
+}
+
 module.exports = {
   teams,
   getNextTeamId,
+  resetTeams,
 }

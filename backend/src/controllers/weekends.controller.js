@@ -7,8 +7,7 @@ const {
     canTransitionSegment,
 } = require('../models/weekends.model')
 
-// In memory storage
-const weekends = []
+const { weekends } = require('../data/weekends.data')
 const { teams } = require('../data/teams.data')
 
 // Check if a name is missing or empty after trimming
