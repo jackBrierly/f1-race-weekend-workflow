@@ -111,6 +111,9 @@ function initialiseWeekend({ teamId, name }) {
     teamId,
     name: trimmedName,
 
+    // For setupVersions to use to increment their versionNumber
+    currentSetupVersionNumber: 0,
+
     // Workflow state
     // All weekends always start in Practice
     stage: WORKFLOW_STAGES.PRACTICE,

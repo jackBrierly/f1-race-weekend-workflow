@@ -2,10 +2,10 @@ const request = require('supertest')
 const app = require('../app')
 const { resetTeams } = require('../data/teams.data')
 const { resetWeekends } = require('../data/weekends.data')
-const { WORKFLOW_STAGES } = require('../constants/workflow-stages')
-const { PRACTICE_SEGMENTS } = require('../constants/segments')
-const { ROLES } = require('../constants/roles')
 const { getAuditForWeekend, resetAudit } = require('../data/audit.data')
+const { WORKFLOW_STAGES } = require('../constants/workflow-stages')
+const { PRACTICE_SEGMENTS, QUALIFYING_SEGMENTS } = require('../constants/segments')
+const { ROLES } = require('../constants/roles')
 
 // Small helper so we don't repeat POST boilerplate everywhere
 async function createTeam(name) {
@@ -170,7 +170,7 @@ describe('Weekends API', () => {
 
             const res = await transitionWeekend(team.body.id, weekend.body.id, {
                 toStage: WORKFLOW_STAGES.PRACTICE,
-                toSegment: PRACTICE_SEGMENTS.P1,
+                toSegment: PRACTICE_SEGMENTS.P2,
             })
 
             expect(res.statusCode).toBe(201)
@@ -339,7 +339,13 @@ describe('Weekends API', () => {
 
         test('When a transition is rejected, no audit event is created', async () => {
             const team = await createTeam('Mclaren')
+            expect(team.statusCode).toBe(201)
+
+
             const weekend = await createWeekend(team.body.id, 'Australia')
+            expect(weekend.statusCode).toBe(201)
+
+            const { teams } = require('../data/teams.data')
 
             const res = await transitionWeekend(team.body.id, weekend.body.id, {
                 // This should be invalid from PRACTICE at the start
@@ -350,6 +356,95 @@ describe('Weekends API', () => {
 
             const audit = getAuditForWeekend(team.body.id, weekend.body.id)
             expect(audit).toHaveLength(0)
+        })
+
+        test('201 when moving to race', async () => {
+
+            const team = await createTeam('Mclaren')
+            const weekend = await createWeekend(team.body.id, 'Australia')
+
+            await transitionWeekend(team.body.id, weekend.body.id, {
+                toStage: WORKFLOW_STAGES.PRACTICE,
+                toSegment: PRACTICE_SEGMENTS.P1,
+            })
+
+            await transitionWeekend(team.body.id, weekend.body.id, {
+                toStage: WORKFLOW_STAGES.PRACTICE,
+                toSegment: PRACTICE_SEGMENTS.P2,
+            })
+
+            await transitionWeekend(team.body.id, weekend.body.id, {
+                toStage: WORKFLOW_STAGES.PRACTICE,
+                toSegment: PRACTICE_SEGMENTS.P3,
+            })
+            const t4 = await transitionWeekend(team.body.id, weekend.body.id, {
+                toStage: WORKFLOW_STAGES.QUALIFYING,
+                toSegment: QUALIFYING_SEGMENTS.NULL,
+            })
+
+            const t5 = await transitionWeekend(team.body.id, weekend.body.id, {
+                toStage: WORKFLOW_STAGES.QUALIFYING,
+                toSegment: QUALIFYING_SEGMENTS.Q1,
+            })
+            const t6 = await transitionWeekend(team.body.id, weekend.body.id, {
+                toStage: WORKFLOW_STAGES.QUALIFYING,
+                toSegment: QUALIFYING_SEGMENTS.Q2,
+            })
+            const t7 = await transitionWeekend(team.body.id, weekend.body.id, {
+                toStage: WORKFLOW_STAGES.QUALIFYING,
+                toSegment: QUALIFYING_SEGMENTS.Q3,
+            })
+            // const t8 = await transitionWeekend(team.body.id, weekend.body.id, {
+            //     toStage: WORKFLOW_STAGES.RACE,
+            //     toSegment: QUALIFYING_SEGMENTS.NULL,
+            // })
+
+            const tempres = await request(app).get(`/teams/${team.body.id}`)
+
+
+            expect(t7.statusCode).toBe(201)
+
+
+
+            expect(tempres.statusCode).toBe(200)
+            expect(tempres.body.id).toEqual(team.body.id)
+
+
+            await transitionWeekend(team.body.id, weekend.body.id, {
+                toStage: WORKFLOW_STAGES.PRACTICE,
+                toSegment: PRACTICE_SEGMENTS.P1,
+            })
+            await transitionWeekend(team.body.id, weekend.body.id, {
+                toStage: WORKFLOW_STAGES.PRACTICE,
+                toSegment: PRACTICE_SEGMENTS.P2,
+            })
+            await transitionWeekend(team.body.id, weekend.body.id, {
+                toStage: WORKFLOW_STAGES.PRACTICE,
+                toSegment: PRACTICE_SEGMENTS.P3,
+            })
+            await transitionWeekend(team.body.id, weekend.body.id, {
+                toStage: WORKFLOW_STAGES.QUALIFYING,
+                toSegment: QUALIFYING_SEGMENTS.NULL,
+            })
+            await transitionWeekend(team.body.id, weekend.body.id, {
+                toStage: WORKFLOW_STAGES.QUALIFYING,
+                toSegment: QUALIFYING_SEGMENTS.Q1,
+            })
+            await transitionWeekend(team.body.id, weekend.body.id, {
+                toStage: WORKFLOW_STAGES.QUALIFYING,
+                toSegment: QUALIFYING_SEGMENTS.Q2,
+            })
+            await transitionWeekend(team.body.id, weekend.body.id, {
+                toStage: WORKFLOW_STAGES.QUALIFYING,
+                toSegment: QUALIFYING_SEGMENTS.Q3,
+            })
+            const res = await transitionWeekend(team.body.id, weekend.body.id, {
+                toStage: WORKFLOW_STAGES.RACE,
+                toSegment: QUALIFYING_SEGMENTS.NULL,
+            })
+
+            expect(res.statusCode).toBe(201)
+
         })
 
         test('Content-Type is JSON', async () => {

@@ -22,4 +22,8 @@ router.get('/:weekendId', getWeekend)
 // POST /teams/{teamId}/weekends/{weekendId}/transition - transition weekend stage
 router.post('/:weekendId/transition', transitionWeekendStage)
 
+const setupVersionsRouter = require('./setupVersions.routes')
+// Mount setupVersion routes under a specific team
+router.use('/:weekendId/setupVersions', setupVersionsRouter)
+
 module.exports = router
