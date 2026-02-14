@@ -94,12 +94,13 @@ SetupVersion
 - Purpose: A saved snapshot of the car setup that the team can reference (“what the setup was at this moment”).
 - Key idea: SetupVersions are facts, not proposals.
 - Fields:
-  - id: unique identifier
+  - id: unique identifier (this increments across the whole systems/ all teams)
+  - versionNumber: integer (e.g. 5) (this increments within each weekend)
   - changeRequestId: optional link to ChangeRequest (set only when created via approval)
   - weekendId: link to Weekend
   - teamId: link to Team
-  - versionNumber: integer (e.g. 5)
-  - session: Practice | Qualifying | Race
+  - stage: Practice | Qualifying | Race
+  - segment: P1/P2/P3 | Q1/Q2/Q3 | null
   - state: Mutable | Finalised | Locked
     - Mutable: setup values may be changed directly (Practice only)
     - Finalised: setup values cannot be changed; new versions require approval (Qualifying)

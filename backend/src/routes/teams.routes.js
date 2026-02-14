@@ -5,7 +5,7 @@ const router = express.Router()
 // Controller functions that handle the request/response
 const {
   createTeam,
-  listTeams,
+  getTeams,
   getTeam,
 } = require('../controllers/teams.controller')
 
@@ -13,7 +13,7 @@ const {
 router.post('/', createTeam)
 
 // GET /teams - list all teams
-router.get('/', listTeams)
+router.get('/', getTeams)
 
 // GET /teams/:teamId - get a single team
 router.get('/:teamId', getTeam)

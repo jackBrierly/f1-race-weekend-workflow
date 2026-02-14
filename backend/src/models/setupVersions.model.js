@@ -16,6 +16,10 @@ const { ROLES } = require('../constants/roles')
 const { WORKFLOW_STAGES } = require('../constants/workflow-stages')
 const { STATES } = require('../constants/states')
 
+function canCreateSetup(stage) {
+    return (stage === WORKFLOW_STAGES.PRACTICE || stage === WORKFLOW_STAGES.QUALIFYING)
+}
+
 
 /**
  * Create a new setupVersion object with validated fields and defaults
@@ -96,4 +100,4 @@ function initialiseSetupVersion({ teamId, weekendId, changeRequestId = null, par
     }
 }
 
-module.exports = { initialiseSetupVersion }
+module.exports = { initialiseSetupVersion, canCreateSetup }

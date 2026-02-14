@@ -9,8 +9,13 @@ const {
     canTransitionSegment,
 } = require('../models/weekends.model')
 
-const { weekends } = require('../data/weekends.data')
-const { teams } = require('../data/teams.data')
+const {
+    addWeekend,
+    findWeekendByTeamAndId,
+    listWeekendsByTeam,
+    weekendNameExistsForTeam,
+} = require('../data/weekends.data')
+const { teamExists: teamExistsById } = require('../data/teams.data')
 const { logAuditTransition, getNextAuditId } = require('../data/audit.data')
 
 const {
@@ -40,17 +45,14 @@ function createWeekend(req, res) {
     }
 
     // some() checks if at least one item passes a test
-    const teamExists = teams.some((team) => team.id === teamId)
+    const teamExists = teamExistsById(teamId)
 
     if (!teamExists) {
         return res.status(404).json({ 'error': { 'code': ERROR_CODES.NOT_FOUND, 'message': 'Team not found' } })
     }
 
     // Check for duplicate weekend names within the same team
-    const weekendExists = weekends.some(
-        (weekend) => weekend.teamId === teamId && weekend.name === name.trim()
-    )
-    
+    const weekendExists = weekendNameExistsForTeam(teamId, name.trim())
     if (weekendExists) {
         // 409 means a Conflict
         return res.status(409).json({ 'error': { 'code': ERROR_CODES.DUPLICATE, 'message': 'This weekend already exists' } })
@@ -61,7 +63,7 @@ function createWeekend(req, res) {
     const weekend = initialiseWeekend({ teamId, name })
 
     // Store the new weekend in memory
-    weekends.push(weekend)
+    addWeekend(weekend)
 
     return res.status(201).json(weekend)
 }
@@ -77,12 +79,12 @@ function listWeekends(req, res) {
     if (teamId === null) { return }
 
     // Make sure the team exists before listing
-    const teamExists = teams.some((team) => team.id === teamId)
+    const teamExists = teamExistsById(teamId)
     if (!teamExists) {
         return res.status(404).json({ 'error': { 'code': ERROR_CODES.NOT_FOUND, 'message': 'Team not found' } })
     }
     // Filter to only this team's weekends
-    const teamWeekends = weekends.filter((weekend) => weekend.teamId === teamId)
+    const teamWeekends = listWeekendsByTeam(teamId)
     return res.json(teamWeekends)
 }
 
@@ -96,7 +98,7 @@ function getWeekend(req, res) {
     if (teamId === null || weekendId === null) { return }
 
     // Make sure the team exists before searching
-    const teamExists = teams.some((team) => team.id === teamId)
+    const teamExists = teamExistsById(teamId)
     if (!teamExists) {
         return res.status(404).json({ 'error': { 'code': ERROR_CODES.NOT_FOUND, 'message': 'Team not found' } })
     }
@@ -135,9 +137,9 @@ function transitionWeekendStage(req, res) {
     if (teamId === null || weekendId === null) { return }
 
     // Make sure the team exists before searching
-    const teamExists = teams.some((team) => team.id === teamId)
+    const teamExists = teamExistsById(teamId)
     if (!teamExists) {
-        return res.status(404).json({ 'error': { 'code': ERROR_CODES.NOT_FOUND, 'message': 'Team not found' } })
+        return res.status(409).json({ 'error': { 'code': ERROR_CODES.NOT_FOUND, 'message': 'Team not found' } })
     }
 
     // Reuse the same weekend lookup logic

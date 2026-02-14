@@ -86,6 +86,7 @@ describe('SetupVersions API', () => {
 
             // Happy Path
             expect(res.statusCode).toBe(201)
+            // expect(res.text).toBe("{\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Team not found\"}}")
 
         })
 
@@ -245,7 +246,7 @@ describe('SetupVersions API', () => {
 
             /**
              * Body params:
-             * changeRequestId: not an integer (string, float, boolean) - <= 0
+             * changeRequestId: missing | not an integer (string, float, boolean) - <= 0
              * parameters: missing | null | array | not object
              * createdBy: missing | not string | whitespace
              * createdByRole: missing | not string | invalid enum
@@ -253,6 +254,18 @@ describe('SetupVersions API', () => {
 
 
             // changeRequestId: not an integer (string, float, boolean) - <= 0
+            test('changeRequestId missing returns 400', async () => {
+                const { team, weekend } = await createTeamWeekend()
+
+                const payload = basePayload()
+                delete payload.changeRequestId
+
+                const res = await request(app)
+                    .post(`/teams/${team.body.id}/weekends/${weekend.body.id}/setupVersions`)
+                    .send(payload)
+
+                expect(res.statusCode).toBe(400)
+            })
             test('changeRequestId as a string returns 400', async () => {
 
                 const { team, weekend } = await createTeamWeekend()
@@ -493,6 +506,9 @@ describe('SetupVersions API', () => {
                     .post(`/teams/${team.body.id}/weekends/${weekend.body.id}/setupVersions`)
                     .send(basePayload({}))
 
+                console.log("over here!")
+                console.log(res.text)
+
                 expect(res.statusCode).toBe(409)
             })
             test('409 when creating setup during race', async () => {
@@ -518,17 +534,18 @@ describe('SetupVersions API', () => {
                 await transitionWeekend(team.body.id, weekend.body.id, {
                     toStage: WORKFLOW_STAGES.QUALIFYING,
                     toSegment: QUALIFYING_SEGMENTS.Q1,
-                })  
+                })
                 await transitionWeekend(team.body.id, weekend.body.id, {
                     toStage: WORKFLOW_STAGES.QUALIFYING,
                     toSegment: QUALIFYING_SEGMENTS.Q2,
                 })
-                 await transitionWeekend(team.body.id, weekend.body.id, {
+                await transitionWeekend(team.body.id, weekend.body.id, {
                     toStage: WORKFLOW_STAGES.QUALIFYING,
                     toSegment: QUALIFYING_SEGMENTS.Q3,
                 })
-                 await transitionWeekend(team.body.id, weekend.body.id, {
+                await transitionWeekend(team.body.id, weekend.body.id, {
                     toStage: WORKFLOW_STAGES.RACE,
+                    toSegment: null,
                 })
 
                 const res = await request(app)

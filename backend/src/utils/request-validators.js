@@ -1,4 +1,4 @@
-const { weekends } = require('../data/weekends.data')
+const { findWeekendByTeamAndId } = require('../data/weekends.data')
 
 const { ERROR_CODES } = require('../constants/error-codes')
 
@@ -45,9 +45,8 @@ function getWeekendIdOr400(req, res) {
 
 // Find a weekend by teamId and weekendId or return a 404
 function getWeekendOr404(res, teamId, weekendId) {
-    const weekend = weekends.find(
-        (w) => w.teamId === teamId && w.id === weekendId
-    )
+    const weekend = findWeekendByTeamAndId(teamId, weekendId)
+
     if (!weekend) {
         res.status(404).json({ 'error': { 'code': ERROR_CODES.NOT_FOUND, 'message': 'Weekend not found' } })
         return null

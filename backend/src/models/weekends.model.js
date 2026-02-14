@@ -41,17 +41,13 @@ function canTransition(fromStage, toStage, fromSegment) {
 // Check if a segment is a valid workflow stage
 // This helps avoid magic strings spread throughout the codebase
 function isValidSegment(segment) {
-  return segment === undefined || QUALIFYING_SEGMENTS_ORDER.includes(segment) || PRACTICE_SEGMENTS_ORDER.includes(segment)
+  return QUALIFYING_SEGMENTS_ORDER.includes(segment) || PRACTICE_SEGMENTS_ORDER.includes(segment)
 }
 
 function canTransitionSegment(fromSegment, toSegment, toStage) {
   // ensure there does not exist a segment for race or review
   if (toStage === WORKFLOW_STAGES.RACE || toStage === WORKFLOW_STAGES.REVIEW) {
-    return toSegment === undefined
-  }
-
-  if (toSegment === undefined) {
-    toSegment = fromSegment
+    return toSegment === null
   }
 
   // if from P3 to qualifying NULL

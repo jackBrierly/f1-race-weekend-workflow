@@ -2,10 +2,12 @@ const request = require('supertest')
 const app = require('../app')
 const { resetTeams } = require('../data/teams.data')
 const { resetWeekends } = require('../data/weekends.data')
-const { getAuditForWeekend, resetAudit } = require('../data/audit.data')
 const { WORKFLOW_STAGES } = require('../constants/workflow-stages')
+const { findWeekendByTeamAndId } = require('../data/weekends.data')
+const { getAuditForWeekend, resetAudit } = require('../data/audit.data')
 const { PRACTICE_SEGMENTS, QUALIFYING_SEGMENTS } = require('../constants/segments')
 const { ROLES } = require('../constants/roles')
+const { teamExists } = require('../data/teams.data')
 
 // Small helper so we don't repeat POST boilerplate everywhere
 async function createTeam(name) {
@@ -35,10 +37,13 @@ async function transitionWeekend(teamId, weekendId, payload) {
 }
 
 beforeEach(() => {
-    resetTeams()
-    resetWeekends()
-    resetAudit()
+//   const { currentTestName } = expect.getState()
+//   console.log('beforeEach ->', currentTestName)
+  resetTeams()
+  resetWeekends()
+  resetAudit()
 })
+
 
 describe('Weekends API', () => {
     // POST /teams/:teamId/weekends - create a weekend for a team
@@ -165,17 +170,103 @@ describe('Weekends API', () => {
     // Body: { 'toStage': 'Qualifying', 'toSegment': 'Q2' }
     describe('POST /teams/{teamId}/weekends/{weekendId}/transition', () => {
         test('201 when stage/segment transition is valid', async () => {
-            const team = await createTeam('Mclaren')
+            console.log('TEST START: 201 valid')
+
+            const team = 
+            await createTeam('Alpinee')
             const weekend = await createWeekend(team.body.id, 'Australia')
+
+            let exists = teamExists(team.body.id)
 
             const res = await transitionWeekend(team.body.id, weekend.body.id, {
                 toStage: WORKFLOW_STAGES.PRACTICE,
-                toSegment: PRACTICE_SEGMENTS.P2,
+                toSegment: PRACTICE_SEGMENTS.P1,
             })
+
+            exists = teamExists(team.body.id)
+            console.log(exists, 'yes')
+
+            console.log(res.statusCode, res.text)
+
+
+            console.log('TEST END: 201 valid')
+
+
 
             expect(res.statusCode).toBe(201)
             expect(res.body.stage).toBe(WORKFLOW_STAGES.PRACTICE)
             expect(res.body.segment).toBe(PRACTICE_SEGMENTS.P1)
+        })
+
+         test('201 when full stage/segment transition is valid', async () => {
+
+            const team = await createTeam('Mclaren')
+            const weekend = await createWeekend(team.body.id, 'Australia')
+
+            const t1 = await transitionWeekend(team.body.id, weekend.body.id, {
+                toStage: WORKFLOW_STAGES.PRACTICE,
+                toSegment: PRACTICE_SEGMENTS.P1,
+            })            
+
+            const t2 = await transitionWeekend(team.body.id, weekend.body.id, {
+                toStage: WORKFLOW_STAGES.PRACTICE,
+                toSegment: PRACTICE_SEGMENTS.P2,
+            })
+            const t3 = await transitionWeekend(team.body.id, weekend.body.id, {
+                toStage: WORKFLOW_STAGES.PRACTICE,
+                toSegment: PRACTICE_SEGMENTS.P3,
+            })
+            const t4 = await transitionWeekend(team.body.id, weekend.body.id, {
+                toStage: WORKFLOW_STAGES.QUALIFYING,
+                toSegment: PRACTICE_SEGMENTS.NULL,
+            })
+            const t5 = await transitionWeekend(team.body.id, weekend.body.id, {
+                toStage: WORKFLOW_STAGES.QUALIFYING,
+                toSegment: QUALIFYING_SEGMENTS.Q1,
+            })
+
+            const t6 = await transitionWeekend(team.body.id, weekend.body.id, {
+                toStage: WORKFLOW_STAGES.QUALIFYING,
+                toSegment: QUALIFYING_SEGMENTS.Q2,
+            })
+            const t7 = await transitionWeekend(team.body.id, weekend.body.id, {
+                toStage: WORKFLOW_STAGES.QUALIFYING,
+                toSegment: QUALIFYING_SEGMENTS.Q3,
+            })
+            const t8 =  await transitionWeekend(team.body.id, weekend.body.id, {
+                toStage: WORKFLOW_STAGES.RACE,
+                toSegment: QUALIFYING_SEGMENTS.NULL,
+            })
+            const t9 = await transitionWeekend(team.body.id, weekend.body.id, {
+                toStage: WORKFLOW_STAGES.REVIEW,
+                toSegment: QUALIFYING_SEGMENTS.NULL,
+            })
+
+            expect(t1.statusCode).toBe(201)
+            expect(t2.statusCode).toBe(201)
+            expect(t3.statusCode).toBe(201)
+            expect(t4.statusCode).toBe(201)
+            expect(t5.statusCode).toBe(201)
+            expect(t6.statusCode).toBe(201)
+            expect(t7.statusCode).toBe(201)
+            expect(t8.statusCode).toBe(201) //
+            expect(t9.statusCode).toBe(201) //
+
+
+            // expect(res.body.stage).toBe(WORKFLOW_STAGES.REVIEW)
+            // expect(res.body.segment).toBe(PRACTICE_SEGMENTS.NULL)
+        })
+
+        test('409 when team does not exist', async () => {
+            const team = await createTeam('Mclaren')
+            const weekend = await createWeekend(team.body.id, 'Australia')
+
+            const res = await transitionWeekend(2, weekend.body.id, {
+                toStage: WORKFLOW_STAGES.PRACTICE,
+                toSegment: PRACTICE_SEGMENTS.P1,
+            })
+
+            expect(res.statusCode).toBe(409)
         })
 
         test('400 when stage is invalid', async () => {
@@ -208,6 +299,7 @@ describe('Weekends API', () => {
 
             const res = await transitionWeekend(team.body.id, weekend.body.id, {
                 toStage: WORKFLOW_STAGES.RACE,
+                toSegment: PRACTICE_SEGMENTS.P1
             })
 
             expect(res.statusCode).toBe(409)
@@ -345,11 +437,10 @@ describe('Weekends API', () => {
             const weekend = await createWeekend(team.body.id, 'Australia')
             expect(weekend.statusCode).toBe(201)
 
-            const { teams } = require('../data/teams.data')
-
             const res = await transitionWeekend(team.body.id, weekend.body.id, {
                 // This should be invalid from PRACTICE at the start
                 toStage: WORKFLOW_STAGES.RACE,
+                toSegment: null
             })
 
             expect(res.statusCode).toBe(409)

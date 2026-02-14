@@ -5,8 +5,8 @@ const {
     getWeekendOr404,
     invalidInputErrorMessage,
 } = require('../utils/request-validators')
-const { initialiseSetupVersion } = require('../models/setupVersions.model')
-const { teams } = require('../data/teams.data')
+const { initialiseSetupVersion, canCreateSetup } = require('../models/setupVersions.model')
+const { teamExists: teamExistsById } = require('../data/teams.data')
 const { setupVersions } = require('../data/setupVersions.data')
 
 /**
@@ -20,14 +20,14 @@ function createSetupVersion(req, res) {
     if (teamId === null || weekendId === null) { return }
 
     // Make sure the team exists before searching
-    const teamExists = teams.some((team) => team.id === teamId)
+    const teamExists = teamExistsById(teamId)
     if (!teamExists) {
         return res.status(404).json({ 'error': { 'code': ERROR_CODES.NOT_FOUND, 'message': 'Team not found' } })
     }
 
     // pull body fields (no deep validation here)
     const {
-        changeRequestId = null,
+        changeRequestId,
         parameters,
         createdBy,
         createdByRole,
@@ -37,6 +37,10 @@ function createSetupVersion(req, res) {
     // Find the weekend that matches both teamId and weekendId
     const weekend = getWeekendOr404(res, teamId, weekendId)
     if (!weekend) { return }
+
+    if (!canCreateSetup(weekend.stage)){
+        return res.status(409).json({ 'error': { 'code': ERROR_CODES.INVALID_TRANSITION, 'message': 'Can only change setup during Practice or Qualifying' } })
+    }
 
 
     try {
@@ -55,6 +59,8 @@ function createSetupVersion(req, res) {
         return invalidInputErrorMessage(res, err.message || 'Invalid input')
     }
 }
+
+// function requestCreateSetupVersion(req)
 
 module.exports = {
     createSetupVersion,
