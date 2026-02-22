@@ -8,25 +8,8 @@ const { WORKFLOW_STAGES } = require('../constants/workflow-stages')
 const { PRACTICE_SEGMENTS, QUALIFYING_SEGMENTS } = require('../constants/segments')
 const { ROLES } = require('../constants/roles')
 const { STATES } = require('../constants/states')
+const { createTeamWeekend, transitionWeekend, advanceP1ToQ1 } = require('./helpers/api')
 
-// Small helper so we don't repeat POST boilerplate everywhere
-async function createTeam(name) {
-    return request(app).post('/teams').send({ name })
-}
-
-async function createWeekend(id, name) {
-    return request(app).post(`/teams/${id}/weekends`).send({ name: name })
-}
-
-async function transitionWeekend(teamId, weekendId, payload) {
-    return request(app)
-        .post(`/teams/${teamId}/weekends/${weekendId}/transition`)
-        .send({
-            actorName: 'Alex Engineer',
-            actorRole: ROLES.LEAD_ENGINEER,
-            ...payload,
-        })
-}
 
 // Base test data with small overrides to keep cases readable.
 const baseParameters = () => ({
@@ -50,19 +33,14 @@ const baseParameters = () => ({
  * You can pass in an `overrides` object to replace any default fields.
  * Example: basePayload({ createdBy: "Lewis Hamilton" }) replaces createdBy.
  */
-const basePayload = (overrides = {}) => ({
-    changeRequestId: null,
-    parameters: baseParameters(),
-    createdBy: 'Jack Brierly',
-    createdByRole: ROLES.ENGINEER,
-    ...overrides, // overrides key/value pairs into the object (spread last so they overwrite defaults)
-})
-
-// Create the team + weekend once per test so we can focus on the variation.
-async function createTeamWeekend() {
-    const team = await createTeam('Mclaren')
-    const weekend = await createWeekend(team.body.id, 'Australia')
-    return { team, weekend }
+function basePayload(overrides = {}) {
+    return {
+        changeRequestId: null,
+        parameters: baseParameters(),
+        createdBy: 'Jack Brierly',
+        createdByRole: ROLES.ENGINEER,
+        ...overrides, // overrides key/value pairs into the object (spread last so they overwrite defaults)
+    }
 }
 
 beforeEach(() => {
@@ -79,7 +57,7 @@ describe('SetupVersions API', () => {
         // Happy Path
         test('Happy Path: 201 when valid during practice with no permission', async () => {
 
-            const { team, weekend } = await createTeamWeekend()
+            const { team, weekend } = await createTeamWeekend(app)
 
             const res = await request(app).post(`/teams/${team.body.id}/weekends/${weekend.body.id}/setupVersions`)
                 .send(basePayload())
@@ -96,7 +74,7 @@ describe('SetupVersions API', () => {
             // response is JSON
             // response contains required keys with correct types
 
-            const { team, weekend } = await createTeamWeekend()
+            const { team, weekend } = await createTeamWeekend(app)
             const parameters = baseParameters()
             const createdBy = 'Jack Brierly'
             const createdByRole = ROLES.ENGINEER
@@ -135,7 +113,7 @@ describe('SetupVersions API', () => {
 
             test('teamId missing returns 404', async () => {
 
-                const { weekend } = await createTeamWeekend()
+                const { weekend } = await createTeamWeekend(app)
 
                 const res = await request(app).post(`/teams//weekends/${weekend.body.id}/setupVersions`)
                     .send(basePayload())
@@ -147,7 +125,7 @@ describe('SetupVersions API', () => {
 
             test('teamId as a string returns 400', async () => {
 
-                const { weekend } = await createTeamWeekend()
+                const { weekend } = await createTeamWeekend(app)
 
                 const res = await request(app).post(`/teams/one/weekends/${weekend.body.id}/setupVersions`)
                     .send(basePayload())
@@ -159,7 +137,7 @@ describe('SetupVersions API', () => {
 
             test('teamId as a float returns 400', async () => {
 
-                const { weekend } = await createTeamWeekend()
+                const { weekend } = await createTeamWeekend(app)
 
                 const res = await request(app).post(`/teams/${1.11242}/weekends/${weekend.body.id}/setupVersions`)
                     .send(basePayload())
@@ -171,7 +149,7 @@ describe('SetupVersions API', () => {
 
             test('teamId as a boolean returns 400', async () => {
 
-                const { weekend } = await createTeamWeekend()
+                const { weekend } = await createTeamWeekend(app)
 
                 const res = await request(app).post(`/teams/${true}/weekends/${weekend.body.id}/setupVersions`)
                     .send(basePayload())
@@ -181,7 +159,7 @@ describe('SetupVersions API', () => {
 
             test('teamId <= 0 returns 400', async () => {
 
-                const { weekend } = await createTeamWeekend()
+                const { weekend } = await createTeamWeekend(app)
 
                 const res = await request(app).post(`/teams/${0}/weekends/${weekend.body.id}/setupVersions`)
                     .send(basePayload())
@@ -191,7 +169,7 @@ describe('SetupVersions API', () => {
 
             test('weekendId missing returns 404', async () => {
 
-                const { team } = await createTeamWeekend()
+                const { team } = await createTeamWeekend(app)
 
                 const res = await request(app).post(`/teams/${team.body.id}/weekends//setupVersions`)
                     .send(basePayload())
@@ -202,7 +180,7 @@ describe('SetupVersions API', () => {
             })
             test('weekendId as a string returns 400', async () => {
 
-                const { team } = await createTeamWeekend()
+                const { team } = await createTeamWeekend(app)
 
                 const res = await request(app).post(`/teams/${team.body.id}/weekends/one/setupVersions`)
                     .send(basePayload())
@@ -214,7 +192,7 @@ describe('SetupVersions API', () => {
 
             test('weekendId as a float returns 400', async () => {
 
-                const { team } = await createTeamWeekend()
+                const { team } = await createTeamWeekend(app)
 
                 const res = await request(app).post(`/teams/${team.body.id}/weekends/${1.3}/setupVersions`)
                     .send(basePayload())
@@ -226,7 +204,7 @@ describe('SetupVersions API', () => {
 
             test('weekendId as a boolean returns 400', async () => {
 
-                const { weekend } = await createTeamWeekend()
+                const { weekend } = await createTeamWeekend(app)
 
                 const res = await request(app).post(`/teams/${weekend.body.id}/weekends/${true}/setupVersions`)
                     .send(basePayload())
@@ -236,7 +214,7 @@ describe('SetupVersions API', () => {
 
             test('weekendId <= 0 returns 400', async () => {
 
-                const { team } = await createTeamWeekend()
+                const { team } = await createTeamWeekend(app)
 
                 const res = await request(app).post(`/teams/${team.body.id}/weekends/${-1}/setupVersions`)
                     .send(basePayload())
@@ -255,7 +233,7 @@ describe('SetupVersions API', () => {
 
             // changeRequestId: not an integer (string, float, boolean) - <= 0
             test('changeRequestId missing returns 400', async () => {
-                const { team, weekend } = await createTeamWeekend()
+                const { team, weekend } = await createTeamWeekend(app)
 
                 const payload = basePayload()
                 delete payload.changeRequestId
@@ -268,7 +246,7 @@ describe('SetupVersions API', () => {
             })
             test('changeRequestId as a string returns 400', async () => {
 
-                const { team, weekend } = await createTeamWeekend()
+                const { team, weekend } = await createTeamWeekend(app)
 
                 const res = await request(app).post(`/teams/${team.body.id}/weekends/${weekend.body.id}/setupVersions`)
                     .send(basePayload({ changeRequestId: "1" }))
@@ -277,7 +255,7 @@ describe('SetupVersions API', () => {
             })
             test('changeRequestId as a float returns 400', async () => {
 
-                const { team, weekend } = await createTeamWeekend()
+                const { team, weekend } = await createTeamWeekend(app)
 
                 const res = await request(app).post(`/teams/${team.body.id}/weekends/${weekend.body.id}/setupVersions`)
                     .send(basePayload({ changeRequestId: 1.2 }))
@@ -286,7 +264,7 @@ describe('SetupVersions API', () => {
             })
             test('changeRequestId as a boolean returns 400', async () => {
 
-                const { team, weekend } = await createTeamWeekend()
+                const { team, weekend } = await createTeamWeekend(app)
 
                 const res = await request(app).post(`/teams/${team.body.id}/weekends/${weekend.body.id}/setupVersions`)
                     .send(basePayload({ changeRequestId: true }))
@@ -295,7 +273,7 @@ describe('SetupVersions API', () => {
             })
             test('changeRequestId <= 0 returns 400', async () => {
 
-                const { team, weekend } = await createTeamWeekend()
+                const { team, weekend } = await createTeamWeekend(app)
 
                 const res = await request(app).post(`/teams/${team.body.id}/weekends/${weekend.body.id}/setupVersions`)
                     .send(basePayload({ changeRequestId: 0 }))
@@ -305,7 +283,7 @@ describe('SetupVersions API', () => {
 
             // parameters: missing | null | array | not object
             test('parameters missing returns 400', async () => {
-                const { team, weekend } = await createTeamWeekend()
+                const { team, weekend } = await createTeamWeekend(app)
 
                 const payload = basePayload()
                 delete payload.parameters
@@ -317,7 +295,7 @@ describe('SetupVersions API', () => {
                 expect(res.statusCode).toBe(400)
             })
             test('parameters as null returns 400', async () => {
-                const { team, weekend } = await createTeamWeekend()
+                const { team, weekend } = await createTeamWeekend(app)
 
                 const res = await request(app)
                     .post(`/teams/${team.body.id}/weekends/${weekend.body.id}/setupVersions`)
@@ -326,7 +304,7 @@ describe('SetupVersions API', () => {
                 expect(res.statusCode).toBe(400)
             })
             test('parameters as array returns 400', async () => {
-                const { team, weekend } = await createTeamWeekend()
+                const { team, weekend } = await createTeamWeekend(app)
 
                 const res = await request(app)
                     .post(`/teams/${team.body.id}/weekends/${weekend.body.id}/setupVersions`)
@@ -335,7 +313,7 @@ describe('SetupVersions API', () => {
                 expect(res.statusCode).toBe(400)
             })
             test('parameters as not an object returns 400', async () => {
-                const { team, weekend } = await createTeamWeekend()
+                const { team, weekend } = await createTeamWeekend(app)
 
                 const res = await request(app)
                     .post(`/teams/${team.body.id}/weekends/${weekend.body.id}/setupVersions`)
@@ -346,7 +324,7 @@ describe('SetupVersions API', () => {
 
             // createdBy: missing | not string | whitespace
             test('createdBy as missing returns 400', async () => {
-                const { team, weekend } = await createTeamWeekend()
+                const { team, weekend } = await createTeamWeekend(app)
 
                 const payload = basePayload()
                 delete payload.createdBy
@@ -358,7 +336,7 @@ describe('SetupVersions API', () => {
                 expect(res.statusCode).toBe(400)
             })
             test('createdBy as an int returns 400', async () => {
-                const { team, weekend } = await createTeamWeekend()
+                const { team, weekend } = await createTeamWeekend(app)
 
                 const res = await request(app)
                     .post(`/teams/${team.body.id}/weekends/${weekend.body.id}/setupVersions`)
@@ -367,7 +345,7 @@ describe('SetupVersions API', () => {
                 expect(res.statusCode).toBe(400)
             })
             test('createdBy as a bool returns 400', async () => {
-                const { team, weekend } = await createTeamWeekend()
+                const { team, weekend } = await createTeamWeekend(app)
 
                 const res = await request(app)
                     .post(`/teams/${team.body.id}/weekends/${weekend.body.id}/setupVersions`)
@@ -376,7 +354,7 @@ describe('SetupVersions API', () => {
                 expect(res.statusCode).toBe(400)
             })
             test('createdBy as null returns 400', async () => {
-                const { team, weekend } = await createTeamWeekend()
+                const { team, weekend } = await createTeamWeekend(app)
 
                 const res = await request(app)
                     .post(`/teams/${team.body.id}/weekends/${weekend.body.id}/setupVersions`)
@@ -385,7 +363,7 @@ describe('SetupVersions API', () => {
                 expect(res.statusCode).toBe(400)
             })
             test('createdBy as whitespace returns 400', async () => {
-                const { team, weekend } = await createTeamWeekend()
+                const { team, weekend } = await createTeamWeekend(app)
 
                 const res = await request(app)
                     .post(`/teams/${team.body.id}/weekends/${weekend.body.id}/setupVersions`)
@@ -396,7 +374,7 @@ describe('SetupVersions API', () => {
 
             // createdByRole: missing | not string | invalid enum
             test('createdByRole as missing returns 400', async () => {
-                const { team, weekend } = await createTeamWeekend()
+                const { team, weekend } = await createTeamWeekend(app)
 
                 const payload = basePayload()
                 delete payload.createdByRole
@@ -408,7 +386,7 @@ describe('SetupVersions API', () => {
                 expect(res.statusCode).toBe(400)
             })
             test('createdByRole as an int returns 400', async () => {
-                const { team, weekend } = await createTeamWeekend()
+                const { team, weekend } = await createTeamWeekend(app)
 
                 const res = await request(app)
                     .post(`/teams/${team.body.id}/weekends/${weekend.body.id}/setupVersions`)
@@ -417,7 +395,7 @@ describe('SetupVersions API', () => {
                 expect(res.statusCode).toBe(400)
             })
             test('createdByRole as a bool returns 400', async () => {
-                const { team, weekend } = await createTeamWeekend()
+                const { team, weekend } = await createTeamWeekend(app)
 
                 const res = await request(app)
                     .post(`/teams/${team.body.id}/weekends/${weekend.body.id}/setupVersions`)
@@ -426,7 +404,7 @@ describe('SetupVersions API', () => {
                 expect(res.statusCode).toBe(400)
             })
             test('createdByRole as null returns 400', async () => {
-                const { team, weekend } = await createTeamWeekend()
+                const { team, weekend } = await createTeamWeekend(app)
 
                 const res = await request(app)
                     .post(`/teams/${team.body.id}/weekends/${weekend.body.id}/setupVersions`)
@@ -435,7 +413,7 @@ describe('SetupVersions API', () => {
                 expect(res.statusCode).toBe(400)
             })
             test('createdByRole as invalid enum returns 400', async () => {
-                const { team, weekend } = await createTeamWeekend()
+                const { team, weekend } = await createTeamWeekend(app)
 
                 // this should be an error as we only read it as uppercase
                 const res = await request(app)
@@ -449,7 +427,7 @@ describe('SetupVersions API', () => {
         describe('Existence Tests: endpoint called correctly, but the thing referenced does not exist.', () => {
 
             test('team does not exist returns 404', async () => {
-                const { weekend } = await createTeamWeekend()
+                const { weekend } = await createTeamWeekend(app)
 
                 const res = await request(app)
                     .post(`/teams/${2}/weekends/${weekend.body.id}/setupVersions`)
@@ -458,7 +436,7 @@ describe('SetupVersions API', () => {
                 expect(res.statusCode).toBe(404)
             })
             test('weekend does not exist returns 404', async () => {
-                const { team } = await createTeamWeekend()
+                const { team } = await createTeamWeekend(app)
 
                 const res = await request(app)
                     .post(`/teams/${team.body.id}/weekends/${2}/setupVersions`)
@@ -469,7 +447,7 @@ describe('SetupVersions API', () => {
 
             test('changeRequestId does not exist returns 404', async () => {
 
-                const { team, weekend } = await createTeamWeekend()
+                const { team, weekend } = await createTeamWeekend(app)
 
                 const res = await request(app)
                     .post(`/teams/${team.body.id}/weekends/${weekend.body.id}/setupVersions`)
@@ -483,21 +461,21 @@ describe('SetupVersions API', () => {
         describe('Business rule tests: ways it can be valid input but still not allowed', () => {
             test('create setup version without changeRequestId during qualifying returns 409', async () => {
 
-                const { team, weekend } = await createTeamWeekend()
+                const { team, weekend } = await createTeamWeekend(app)
 
-                await transitionWeekend(team.body.id, weekend.body.id, {
+                await transitionWeekend(app, team.body.id, weekend.body.id, {
                     toStage: WORKFLOW_STAGES.PRACTICE,
                     toSegment: PRACTICE_SEGMENTS.P1,
                 })
-                await transitionWeekend(team.body.id, weekend.body.id, {
+                await transitionWeekend(app, team.body.id, weekend.body.id, {
                     toStage: WORKFLOW_STAGES.PRACTICE,
                     toSegment: PRACTICE_SEGMENTS.P2,
                 })
-                await transitionWeekend(team.body.id, weekend.body.id, {
+                await transitionWeekend(app, team.body.id, weekend.body.id, {
                     toStage: WORKFLOW_STAGES.PRACTICE,
                     toSegment: PRACTICE_SEGMENTS.P3,
                 })
-                await transitionWeekend(team.body.id, weekend.body.id, {
+                await transitionWeekend(app, team.body.id, weekend.body.id, {
                     toStage: WORKFLOW_STAGES.QUALIFYING,
                     toSegment: QUALIFYING_SEGMENTS.NULL,
                 })
@@ -513,37 +491,19 @@ describe('SetupVersions API', () => {
             })
             test('409 when creating setup during race', async () => {
 
-                const { team, weekend } = await createTeamWeekend()
+                const { team, weekend } = await createTeamWeekend(app)
 
-                await transitionWeekend(team.body.id, weekend.body.id, {
-                    toStage: WORKFLOW_STAGES.PRACTICE,
-                    toSegment: PRACTICE_SEGMENTS.P1,
-                })
-                await transitionWeekend(team.body.id, weekend.body.id, {
-                    toStage: WORKFLOW_STAGES.PRACTICE,
-                    toSegment: PRACTICE_SEGMENTS.P2,
-                })
-                await transitionWeekend(team.body.id, weekend.body.id, {
-                    toStage: WORKFLOW_STAGES.PRACTICE,
-                    toSegment: PRACTICE_SEGMENTS.P3,
-                })
-                await transitionWeekend(team.body.id, weekend.body.id, {
-                    toStage: WORKFLOW_STAGES.QUALIFYING,
-                    toSegment: QUALIFYING_SEGMENTS.NULL,
-                })
-                await transitionWeekend(team.body.id, weekend.body.id, {
-                    toStage: WORKFLOW_STAGES.QUALIFYING,
-                    toSegment: QUALIFYING_SEGMENTS.Q1,
-                })
-                await transitionWeekend(team.body.id, weekend.body.id, {
+                await advanceP1ToQ1(app, team.body.id, weekend.body.id)
+                
+                await transitionWeekend(app, team.body.id, weekend.body.id, {
                     toStage: WORKFLOW_STAGES.QUALIFYING,
                     toSegment: QUALIFYING_SEGMENTS.Q2,
                 })
-                await transitionWeekend(team.body.id, weekend.body.id, {
+                await transitionWeekend(app, team.body.id, weekend.body.id, {
                     toStage: WORKFLOW_STAGES.QUALIFYING,
                     toSegment: QUALIFYING_SEGMENTS.Q3,
                 })
-                await transitionWeekend(team.body.id, weekend.body.id, {
+                await transitionWeekend(app, team.body.id, weekend.body.id, {
                     toStage: WORKFLOW_STAGES.RACE,
                     toSegment: null,
                 })

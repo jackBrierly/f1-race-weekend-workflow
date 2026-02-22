@@ -26,4 +26,7 @@ const setupVersionsRouter = require('./setupVersions.routes')
 // Mount setupVersion routes under a specific team
 router.use('/:weekendId/setupVersions', setupVersionsRouter)
 
+const setupVerisonRequestRouter = require('./setupVersionsRequets.routes')
+router.use('/:weekendId/setupVersionsRequests', setupVerisonRequestRouter)
+
 module.exports = router

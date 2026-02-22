@@ -15,7 +15,7 @@ const {
     listWeekendsByTeam,
     weekendNameExistsForTeam,
 } = require('../data/weekends.data')
-const { teamExists: teamExistsById } = require('../data/teams.data')
+const { teamExistsById } = require('../data/teams.data')
 const { logAuditTransition, getNextAuditId } = require('../data/audit.data')
 
 const {

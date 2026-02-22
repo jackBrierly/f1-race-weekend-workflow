@@ -6,7 +6,7 @@ const {
     invalidInputErrorMessage,
 } = require('../utils/request-validators')
 const { initialiseSetupVersion, canCreateSetup } = require('../models/setupVersions.model')
-const { teamExists: teamExistsById } = require('../data/teams.data')
+const { teamExistsById } = require('../data/teams.data')
 const { setupVersions } = require('../data/setupVersions.data')
 
 /**

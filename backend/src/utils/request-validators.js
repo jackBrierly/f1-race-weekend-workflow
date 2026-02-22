@@ -30,6 +30,52 @@ function getTeamIdOr400(req, res) {
     return Number(teamIdStr)
 }
 
+function parsePositiveIntId(id, idType) {
+    const idStr = String(id)
+
+    if (!/^\d+$/.test(idStr)) {
+        const err = new Error(`${idType} id must be a positive integer`)
+        err.code = "INVALID_ID"
+        throw err
+    }
+
+    const idNum = Number(idStr)
+
+    if (idNum <= 0) {
+        const err = new Error(`${idType} id must be a positive integer`)
+        err.code = "INVALID_ID"
+        throw err
+    }
+
+    return idNum
+}
+
+function requireNonEmptyString(value, fieldName) {
+    if (typeof value !== 'string' || value.trim().length === 0) {
+        const err = new Error(`${fieldName} must be a non-empty string`)
+        err.code = 'INVALID_STRING'
+        throw err
+    }
+
+    return value.trim()
+}
+
+function requireNonEmptyObject(value, fieldName) {
+    if (
+        value === null ||
+        typeof value !== 'object' ||
+        Array.isArray(value) ||
+        Object.keys(value).length === 0
+    ) {
+        const err = new Error(`${fieldName} must be a non-empty object`)
+        err.code = 'INVALID_OBJECT'
+        throw err
+    }
+
+    return value
+}
+
+
 // Get and validate Weekends ID from the URL
 function getWeekendIdOr400(req, res) {
     const weekendIdStr = String(req.params.weekendId)
@@ -55,6 +101,9 @@ function getWeekendOr404(res, teamId, weekendId) {
 }
 
 module.exports = {
+    parsePositiveIntId,
+    requireNonEmptyString,
+    requireNonEmptyObject,
     getTeamIdOr400,
     getWeekendIdOr400,
     getWeekendOr404,

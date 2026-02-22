@@ -1,13 +1,12 @@
 const request = require('supertest')
 const app = require('../app')
-const { resetTeams } = require('../data/teams.data')
+const { resetTeams, teamExistsById } = require('../data/teams.data')
 const { resetWeekends } = require('../data/weekends.data')
 const { WORKFLOW_STAGES } = require('../constants/workflow-stages')
 const { findWeekendByTeamAndId } = require('../data/weekends.data')
 const { getAuditForWeekend, resetAudit } = require('../data/audit.data')
 const { PRACTICE_SEGMENTS, QUALIFYING_SEGMENTS } = require('../constants/segments')
 const { ROLES } = require('../constants/roles')
-const { teamExists } = require('../data/teams.data')
 
 // Small helper so we don't repeat POST boilerplate everywhere
 async function createTeam(name) {
@@ -50,13 +49,13 @@ describe('Weekends API', () => {
     describe('POST /teams/:teamId/weekends', () => {
         test('201 when valid', async () => {
             const team = await createTeam('Mclaren')
-            const res = await createWeekend(team.body.id, '  Australia  ')
+            const res = await createWeekend(team.body.id, ' Hungary ')
 
             expect(res.statusCode).toBe(201)
             expect(res.body).toEqual(expect.objectContaining({
                 id: expect.any(Number),
                 teamId: team.body.id,
-                name: 'Australia',
+                name: 'Hungary',
                 stage: WORKFLOW_STAGES.PRACTICE,
                 segment: null,
                 createdAt: expect.any(String),
@@ -176,14 +175,14 @@ describe('Weekends API', () => {
             await createTeam('Alpinee')
             const weekend = await createWeekend(team.body.id, 'Australia')
 
-            let exists = teamExists(team.body.id)
+            let exists = teamExistsById(team.body.id)
 
             const res = await transitionWeekend(team.body.id, weekend.body.id, {
                 toStage: WORKFLOW_STAGES.PRACTICE,
                 toSegment: PRACTICE_SEGMENTS.P1,
             })
 
-            exists = teamExists(team.body.id)
+            exists = teamExistsById(team.body.id)
             console.log(exists, 'yes')
 
             console.log(res.statusCode, res.text)

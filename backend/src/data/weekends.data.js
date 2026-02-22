@@ -16,6 +16,10 @@ function getWeekend(weekendId) {
   return weekend
 }
 
+function weekendExistsForTeam(weekendId, teamId) {
+    return weekends.some((weekend) => weekend.id === weekendId && weekend.teamId === teamId) 
+}
+
 function getNextVersionNumber(weekendId) {
   const weekend = getWeekend(weekendId)
 
@@ -69,4 +73,5 @@ module.exports = {
   getStage,
   getSegment,
   resetWeekends,
+  weekendExistsForTeam,
 }

@@ -21,7 +21,7 @@ function findTeamById(teamId) {
   return teams.find((team) => team.id === teamId) || null
 }
 
-function teamExists(teamId) {
+function teamExistsById(teamId) {
   return teams.some((team) => team.id === teamId)
 }
 
@@ -38,7 +38,7 @@ module.exports = {
   addTeam,
   listTeams,
   findTeamById,
-  teamExists,
+  teamExistsById,
   teamNameExists,
   getNextTeamId,
   resetTeams,
