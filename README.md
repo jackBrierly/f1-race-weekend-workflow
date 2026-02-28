@@ -21,6 +21,7 @@ This system provides a single source of truth for:
 - **Team-scoped data:** Each team uses the system independently, with its own weekends, setups, and decisions.
 - **Audit-first approach:** Core entities are immutable; decisions are recorded as explicit actions so changes are visible and traceable, rather than silently overwriting data.
 - **API-first architecture:** A REST API enforces workflow rules and serves as the single source of truth for the frontend.
+- **Versioned setup snapshots**: Each setup change is recorded as an immutable Setup Version, representing the team’s official configuration at a specific point in time. Versions form a linear history (v1, v2, v3…) and the most recent version represents the currently recorded setup; during restricted stages (Qualifying and Race), new versions may only be created via approved Setup Change Requests.
 
 ## Repository Structure
 
