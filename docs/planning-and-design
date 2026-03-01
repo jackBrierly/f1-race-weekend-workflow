@@ -6,6 +6,15 @@ This lack of a single, reliable source of truth can lead to confusion about the 
 
 The goal of this project is to design and build a workflow and decision-tracking system that provides clarity and structure during a race weekend. The system should show the current stage of the weekend, maintain versioned car setups, allow engineers to propose changes, require approvals from authorised roles, enforce session-based rules, and maintain an audit trail of all decisions. By doing so, the system aims to reduce operational errors and give teams a clear, shared understanding of decisions made under pressure.
 
+System boundary (what this software does and does not do)
+
+This system models the governance and decision-tracking workflow around car setup changes during a race weekend. It does not control the physical car or automatically apply changes to vehicle hardware.
+
+A “Setup Version” in this system is a recorded configuration snapshot (the team’s source of truth in software). Any real-world mechanical changes would still be performed by engineers on the car, and this system exists to ensure those decisions are clear, permission-checked, and auditable.
+
+Scope note
+
+This MVP models a single car / driver per team-weekend. Extending to two drivers would add an explicit `carId` (or `driverId`) dimension across setup-related entities and endpoints.
 
 Roles:
 
@@ -41,10 +50,10 @@ Permissions:
 
 Qualifying
 - Focused on performance with stricter controls.
-- Engineers can no longer directly edit the current car setup.
+- Direct setup changes are restricted; new SetupVersions require an approved SetupVersionRequest.
 - Engineers may propose setup changes for review.
 - A Lead Engineer must approve or reject each proposed change.
-- Approved changes create a new setup version to preserve traceability.
+- Accepted requests authorise creation of a new SetupVersion to preserve traceability.
 Permissions:
 - Engineers: propose changes, record notes.
 - Lead Engineers: approve or reject changes.
@@ -52,8 +61,7 @@ Permissions:
 
 Race
 - Focused on stability, reliability, and execution.
-- Core setup parameters cannot be structurally changed.
-- Limited operational adjustments may occur but are not versioned.
+- Under parc fermé style restrictions, new SetupVersions are not created in this MVP.
 - Strategy notes and observations are recorded.
 Permissions:
 - Engineers: record notes only.
@@ -92,41 +100,36 @@ Weekend
 
 SetupVersion
 - Purpose: A saved snapshot of the car setup that the team can reference (“what the setup was at this moment”).
-- Key idea: SetupVersions are facts, not proposals.
+- Key idea: SetupVersions are recorded snapshots (facts), not proposals. The latest SetupVersion is treated as the current recorded setup for the weekend.
 - Fields:
   - id: unique identifier (this increments across the whole systems/ all teams)
   - versionNumber: integer (e.g. 5) (this increments within each weekend)
-  - changeRequestId: optional link to ChangeRequest (set only when created via approval)
+  - setupVersionRequestId: optional link to SetupVersionRequest (set only when created via approval)
   - weekendId: link to Weekend
   - teamId: link to Team
   - stage: Practice | Qualifying | Race
   - segment: P1/P2/P3 | Q1/Q2/Q3 | null
-  - state: Mutable | Finalised | Locked
-    - Mutable: setup values may be changed directly (Practice only)
-    - Finalised: setup values cannot be changed; new versions require approval (Qualifying)
-    - Locked: setup values cannot be changed and no new versions may be created (Race)
   - parameters: key-value map of setup values (kept small in MVP)
   - createdByName: user-entered name
   - createdByRole: Engineer | Lead Engineer
   - createdAt: timestamp
 
-ChangeRequest
-- Purpose: A proposed change to the setup that is waiting for a decision.
-- Key idea: ChangeRequests are proposals; if approved, they create a NEW SetupVersion.
+SetupVersionRequest
+- Purpose: A proposed setup change that requires a decision from a Lead Engineer before a new SetupVersion can be recorded.
+- Key idea: Requests are proposals; if accepted, they authorise creation of a NEW SetupVersion.
 - Fields:
   - id: unique identifier
   - weekendId: link to Weekend
   - teamId: link to Team
-  - baseSetupId: the setup version the proposal is based on
-  - status: Pending | Approved | Rejected
-  - changes: list of { field, fromValue, toValue }
-  - reason: free text (required)
-  - appliesTo: optional label (e.g. "Q2 Run 2")
-  - createdByName: user-entered name
-  - createdAt: timestamp
-  - decidedByName: Lead Engineer name (if decided)
+  - requestedBy: user-entered name
+  - requestedByRole: Engineer
+  - requestedTo: user-entered name (Lead Engineer)
+  - requestedToRole: Lead Engineer
+  - parameters: key-value map of requested setup values
+  - requestedAt: timestamp
+  - status: PENDING | ACCEPTED | DECLINED | NO_LONGER_VALID
   - decidedAt: timestamp (if decided)
-  - decisionNote: optional context (especially for rejection)
+  - decidedBy: Lead Engineer name (if decided)
 
 Note
 - Purpose: Captures driver feedback or engineer observations tied to a stage/session.
