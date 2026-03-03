@@ -8,11 +8,17 @@ const router = express.Router({ mergeParams: true })
 
 const { 
     createSetupVersion,
+    listSetupVersionsForWeekend,
+    getSetupVersion,
 } = require('../controllers/setupVersions.controller')
 
 // POST /setupVersions
 // Create setup version is called when approved or when not in need of approval 
 router.post('/', createSetupVersion)
+
+// GET /setupVersions
+// Get all setup versions
+router.get('/', listSetupVersionsForWeekend)
 
 // we expore as router and not { router } so that the file exports the router directly
 // so when weekends.router calls const setupVersionsRouter = require('./setupVersions.routes')

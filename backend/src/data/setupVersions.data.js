@@ -7,6 +7,10 @@ function getNextSetupVersionId() {
   return nextSetupVersionId++
 }
 
+function listSetupVersionsForWeekend(weekendId) {
+  return setupVersions.filter(setupVersion => setupVersion.weekendId === weekendId)
+}
+
 function resetSetupVersions() {
   // Clear in place so any module holding a reference sees the empty array
   setupVersions.length = 0
@@ -14,7 +18,8 @@ function resetSetupVersions() {
 }
 
 module.exports = {
-  setupVersions,
   getNextSetupVersionId,
   resetSetupVersions,
+  listSetupVersionsForWeekend,
+  setupVersions,
 }

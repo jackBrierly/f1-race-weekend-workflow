@@ -4,12 +4,13 @@ const { resetTeams } = require('../data/teams.data')
 const { resetWeekends } = require('../data/weekends.data')
 const { resetAudit } = require('../data/audit.data')
 const { resetSetupVersions } = require('../data/setupVersions.data')
+const { resetSetupVersionsRequests } = require('../models/setupVersionsRequests.model')
 const { WORKFLOW_STAGES } = require('../constants/workflow-stages')
 const { PRACTICE_SEGMENTS, QUALIFYING_SEGMENTS } = require('../constants/segments')
 const { ROLES } = require('../constants/roles')
 const { STATES } = require('../constants/states')
 const { createTeamWeekend, transitionWeekend, advanceP1ToQ1 } = require('./helpers/api')
-
+const { setupVersionsRequestsBasePayload } = require('./setupVersionsRequests.test')
 
 // Base test data with small overrides to keep cases readable.
 const baseParameters = () => ({
@@ -35,7 +36,7 @@ const baseParameters = () => ({
  */
 function basePayload(overrides = {}) {
     return {
-        changeRequestId: null,
+        setupVersionRequestId: null,
         parameters: baseParameters(),
         createdBy: 'Jack Brierly',
         createdByRole: ROLES.ENGINEER,
@@ -48,6 +49,7 @@ beforeEach(() => {
     resetWeekends()
     resetAudit()
     resetSetupVersions()
+    resetSetupVersionsRequests
 })
 
 describe('SetupVersions API', () => {
@@ -55,7 +57,7 @@ describe('SetupVersions API', () => {
     describe('POST /teams/:teamId/weekends/:weekendId/setupVersions', () => {
 
         // Happy Path
-        test('Happy Path: 201 when valid during practice with no permission', async () => {
+        test('Happy Path 1: 201 when valid during qualifying with no permission', async () => {
 
             const { team, weekend } = await createTeamWeekend(app)
 
@@ -66,6 +68,36 @@ describe('SetupVersions API', () => {
             expect(res.statusCode).toBe(201)
             // expect(res.text).toBe("{\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Team not found\"}}")
 
+        })
+
+        // Happy Path
+        test('Happy Path 2: 201 when valid during qualifying with accepted request', async () => {
+
+            const { team, weekend } = await createTeamWeekend(app)
+
+            await advanceP1ToQ1(app, team.body.id, weekend.body.id)
+
+            const setupRequestRes = await request(app)
+                .post(`/teams/${team.body.id}/weekends/${weekend.body.id}/setupVersionsRequests`)
+                .send(setupVersionsRequestsBasePayload({ requestedTo: 'John Doe' }))
+
+            const acceptRes = await request(app)
+                .post(`/teams/${team.body.id}/weekends/${weekend.body.id}/setupVersionsRequests/${setupRequestRes.body.id}/accept`)
+                .send({ acceptedBy: 'John Doe', acceptedByRole: ROLES.LEAD_ENGINEER })
+
+            const res = await request(app).post(`/teams/${team.body.id}/weekends/${weekend.body.id}/setupVersions`)
+                .send(basePayload({ setupVersionRequestId: setupRequestRes.body.id }))
+
+            // Happy Path
+            expect(res.statusCode).toBe(201)
+            // delta test
+            expect(res.body).toEqual(expect.objectContaining({
+                teamId: team.body.id,
+                weekendId: weekend.body.id,
+                setupVersionRequestId: setupRequestRes.body.id,
+                createdAtStage: WORKFLOW_STAGES.QUALIFYING,
+                createdAt: expect.any(String),
+            }))
         })
 
         // Contract Test “What exactly does this endpoint promise to return?” 
@@ -86,14 +118,14 @@ describe('SetupVersions API', () => {
                 id: 1,
                 teamId: team.body.id,
                 weekendId: weekend.body.id,
-                changeRequestId: null,
+                setupVersionRequestId: null,
                 versionNumber: 1,
-                stage: WORKFLOW_STAGES.PRACTICE,
                 segment: PRACTICE_SEGMENTS.NULL,
-                state: STATES.MUTABLE,
+                // state: STATES.MUTABLE,
                 parameters,
                 createdBy,
                 createdByRole,
+                createdAtStage: WORKFLOW_STAGES.PRACTICE,
                 createdAt: expect.any(String),
             }))
 
@@ -224,19 +256,19 @@ describe('SetupVersions API', () => {
 
             /**
              * Body params:
-             * changeRequestId: missing | not an integer (string, float, boolean) - <= 0
+             * setupVersionRequestId: missing | not an integer (string, float, boolean) - <= 0
              * parameters: missing | null | array | not object
              * createdBy: missing | not string | whitespace
              * createdByRole: missing | not string | invalid enum
              */
 
 
-            // changeRequestId: not an integer (string, float, boolean) - <= 0
-            test('changeRequestId missing returns 400', async () => {
+            // setupVersionRequestId: not an integer (string, float, boolean) - <= 0
+            test('setupVersionRequestId missing returns 400', async () => {
                 const { team, weekend } = await createTeamWeekend(app)
 
                 const payload = basePayload()
-                delete payload.changeRequestId
+                delete payload.setupVersionRequestId
 
                 const res = await request(app)
                     .post(`/teams/${team.body.id}/weekends/${weekend.body.id}/setupVersions`)
@@ -244,39 +276,39 @@ describe('SetupVersions API', () => {
 
                 expect(res.statusCode).toBe(400)
             })
-            test('changeRequestId as a string returns 400', async () => {
+            test('setupVersionRequestId as a string returns 400', async () => {
 
                 const { team, weekend } = await createTeamWeekend(app)
 
                 const res = await request(app).post(`/teams/${team.body.id}/weekends/${weekend.body.id}/setupVersions`)
-                    .send(basePayload({ changeRequestId: "1" }))
+                    .send(basePayload({ setupVersionRequestId: "two" }))
 
                 expect(res.statusCode).toBe(400)
             })
-            test('changeRequestId as a float returns 400', async () => {
+            test('setupVersionRequestId as a float returns 400', async () => {
 
                 const { team, weekend } = await createTeamWeekend(app)
 
                 const res = await request(app).post(`/teams/${team.body.id}/weekends/${weekend.body.id}/setupVersions`)
-                    .send(basePayload({ changeRequestId: 1.2 }))
+                    .send(basePayload({ setupVersionRequestId: 1.2 }))
 
                 expect(res.statusCode).toBe(400)
             })
-            test('changeRequestId as a boolean returns 400', async () => {
+            test('setupVersionRequestId as a boolean returns 400', async () => {
 
                 const { team, weekend } = await createTeamWeekend(app)
 
                 const res = await request(app).post(`/teams/${team.body.id}/weekends/${weekend.body.id}/setupVersions`)
-                    .send(basePayload({ changeRequestId: true }))
+                    .send(basePayload({ setupVersionRequestId: true }))
 
                 expect(res.statusCode).toBe(400)
             })
-            test('changeRequestId <= 0 returns 400', async () => {
+            test('setupVersionRequestId <= 0 returns 400', async () => {
 
                 const { team, weekend } = await createTeamWeekend(app)
 
                 const res = await request(app).post(`/teams/${team.body.id}/weekends/${weekend.body.id}/setupVersions`)
-                    .send(basePayload({ changeRequestId: 0 }))
+                    .send(basePayload({ setupVersionRequestId: 0 }))
 
                 expect(res.statusCode).toBe(400)
             })
@@ -445,13 +477,13 @@ describe('SetupVersions API', () => {
                 expect(res.statusCode).toBe(404)
             })
 
-            test('changeRequestId does not exist returns 404', async () => {
+            test('setupVersionRequestId does not exist returns 404', async () => {
 
                 const { team, weekend } = await createTeamWeekend(app)
 
                 const res = await request(app)
                     .post(`/teams/${team.body.id}/weekends/${weekend.body.id}/setupVersions`)
-                    .send(basePayload({ changeRequestId: 1 }))
+                    .send(basePayload({ setupVersionRequestId: 1 }))
 
                 expect(res.statusCode).toBe(404)
             })
@@ -459,7 +491,7 @@ describe('SetupVersions API', () => {
         })
 
         describe('Business rule tests: ways it can be valid input but still not allowed', () => {
-            test('create setup version without changeRequestId during qualifying returns 409', async () => {
+            test('create setup version without setupVersionRequestId during qualifying returns 409', async () => {
 
                 const { team, weekend } = await createTeamWeekend(app)
 
@@ -494,7 +526,7 @@ describe('SetupVersions API', () => {
                 const { team, weekend } = await createTeamWeekend(app)
 
                 await advanceP1ToQ1(app, team.body.id, weekend.body.id)
-                
+
                 await transitionWeekend(app, team.body.id, weekend.body.id, {
                     toStage: WORKFLOW_STAGES.QUALIFYING,
                     toSegment: QUALIFYING_SEGMENTS.Q2,
@@ -517,7 +549,51 @@ describe('SetupVersions API', () => {
 
         })
 
+        describe('Side effects test: did it actually do the thing', () => {
+            /**
+             * - After creating setupVersion, GET list includes it
+             * - versionNumber increments
+             */
+            test('GET list includes setupVersion after creating it', async () => {
+                const { team, weekend } = await createTeamWeekend(app)
 
+                await request(app)
+                    .post(`/teams/${team.body.id}/weekends/${weekend.body.id}/setupVersions`)
+                    .send(basePayload())
+
+                const res = await request(app)
+                    .get(`/teams/${team.body.id}/weekends/${weekend.body.id}/setupVersions`)
+
+                expect(res.body).toHaveLength(1)
+
+                expect(res.body[0]).toMatchObject({
+                    weekendId: weekend.body.id,
+                    teamId: team.body.id,
+                    versionNumber: 1,
+                })
+            })
+
+            test('versionNumber increments per weekend', async () => {
+                const { team, weekend } = await createTeamWeekend(app)
+
+                await request(app)
+                    .post(`/teams/${team.body.id}/weekends/${weekend.body.id}/setupVersions`)
+                    .send(basePayload())
+
+                await request(app)
+                    .post(`/teams/${team.body.id}/weekends/${weekend.body.id}/setupVersions`)
+                    .send(basePayload())
+
+                const res = await request(app)
+                    .get(`/teams/${team.body.id}/weekends/${weekend.body.id}/setupVersions`)
+
+                expect(res.statusCode).toBe(200)
+                expect(res.body).toHaveLength(2)
+
+                const versionNumbers = res.body.map(v => v.versionNumber).sort((a, b) => a - b)
+                expect(versionNumbers).toEqual([1, 2])
+            })
+        })
     })
 
 

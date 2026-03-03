@@ -52,9 +52,7 @@ async function advanceP1ToQ1(app, teamId, weekendId) {
         toSegment: QUALIFYING_SEGMENTS.Q1,
     })
 }
-
-async function advanceP1ToReview(app, teamId, weekendId) {
-    await advanceP1ToQ1(app, teamId, weekendId)
+async function advanceQ1ToReview(app, teamId, weekendId) {
     await transitionWeekend(app, teamId, weekendId, {
         toStage: WORKFLOW_STAGES.QUALIFYING,
         toSegment: QUALIFYING_SEGMENTS.Q2,
@@ -71,7 +69,10 @@ async function advanceP1ToReview(app, teamId, weekendId) {
           toStage: WORKFLOW_STAGES.REVIEW,
         toSegment: QUALIFYING_SEGMENTS.NULL,
     })
-
+}
+async function advanceP1ToReview(app, teamId, weekendId) {
+    await advanceP1ToQ1(app, teamId, weekendId)
+    await advanceQ1ToReview(app, teamId, weekendId)
 }
 
 // Base test data with small overrides to keep cases readable.
@@ -98,5 +99,6 @@ module.exports = {
     transitionWeekend,
     baseParameters,
     advanceP1ToQ1,
+    advanceQ1ToReview,
     advanceP1ToReview,
 }

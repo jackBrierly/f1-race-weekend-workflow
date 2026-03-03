@@ -3,7 +3,7 @@
  * A saved snapshot of the car setup that the team can reference (“what the setup was at this moment”).
  */
 
-const { getNextSetupVersionId } = require('../data/setupVersions.data')
+const { getNextSetupVersionId, setupVersions } = require('../data/setupVersions.data')
 
 const {
     getCurrentSession,
@@ -16,6 +16,26 @@ const { ROLES } = require('../constants/roles')
 const { WORKFLOW_STAGES } = require('../constants/workflow-stages')
 const { STATES } = require('../constants/states')
 
+function createSetupVersion(teamId, weekendId, parameters, createdBy, createdByRole, setupVersionRequestId) {
+    const setupVersion = {
+        id: getNextSetupVersionId(),
+        teamId,
+        weekendId,
+        setupVersionRequestId,
+        versionNumber: getNextVersionNumber(weekendId),
+        segment: getSegment(weekendId),
+        parameters,
+        createdBy,
+        createdByRole,
+        createdAtStage: getStage(weekendId),
+        createdAt: new Date().toISOString(),
+    }
+
+    setupVersions.push(setupVersion)
+
+    return setupVersion
+}
+
 function canCreateSetup(stage) {
     return (stage === WORKFLOW_STAGES.PRACTICE || stage === WORKFLOW_STAGES.QUALIFYING)
 }
@@ -26,6 +46,8 @@ function canCreateSetup(stage) {
  * This function centralises the rules for what a setupVersion
  */
 function initialiseSetupVersion({ teamId, weekendId, changeRequestId = null, parameters, createdBy, createdByRole }) {
+
+
 
     if (typeof createdBy !== 'string' || createdBy.trim().length === 0) {
         throw new Error('createdBy is required')
@@ -100,4 +122,4 @@ function initialiseSetupVersion({ teamId, weekendId, changeRequestId = null, par
     }
 }
 
-module.exports = { initialiseSetupVersion, canCreateSetup }
+module.exports = { initialiseSetupVersion, canCreateSetup, createSetupVersion }
