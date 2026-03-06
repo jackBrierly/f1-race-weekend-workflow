@@ -36,9 +36,10 @@ function createSetupVersionRequest(
     requestedToRole,
     parameters
 ) {
+    nextSetupVersionRequestId+=1
     // store request as pending. There exist pending, accepted, declined, no longer valid.
     const newRequest = {
-        id: nextSetupVersionRequestId++,
+        id: nextSetupVersionRequestId,
         teamId,
         weekendId,
         requestedBy,
@@ -58,7 +59,7 @@ function createSetupVersionRequest(
 function resetSetupVersionsRequests() {
     // Clear in place so any module holding a reference sees the empty array
     requests.length = 0
-    nextSetupVersionRequestId = 1
+    nextSetupVersionRequestId = 0
 }
 
 function listSetupVersionsRequestsForWeekend(weekendId) {

@@ -10,7 +10,7 @@ const { PRACTICE_SEGMENTS, QUALIFYING_SEGMENTS } = require('../constants/segment
 const { ROLES } = require('../constants/roles')
 const { STATES } = require('../constants/states')
 const { createTeamWeekend, transitionWeekend, advanceP1ToQ1 } = require('./helpers/api')
-const { setupVersionsRequestsBasePayload } = require('./setupVersionsRequests.test')
+const { setupVersionsRequestsBasePayload } = require('./helpers/setupVersionsRequests')
 
 // Base test data with small overrides to keep cases readable.
 const baseParameters = () => ({
@@ -483,8 +483,7 @@ describe('SetupVersions API', () => {
 
                 const res = await request(app)
                     .post(`/teams/${team.body.id}/weekends/${weekend.body.id}/setupVersions`)
-                    .send(basePayload({ setupVersionRequestId: 1 }))
-
+                    .send(basePayload({ setupVersionRequestId: 2 }))
                 expect(res.statusCode).toBe(404)
             })
 
