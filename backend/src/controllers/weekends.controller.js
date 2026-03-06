@@ -15,52 +15,14 @@ const {
     listWeekendsByTeam,
     weekendNameExistsForTeam,
 } = require('../data/weekends.data')
-const { teams } = require('../data/teams.data')
+const { teamExistsById } = require('../data/teams.data')
 const { logAuditTransition, getNextAuditId } = require('../data/audit.data')
 
-// Check if a name is missing or empty after trimming
-function isInvalidName(name) {
-    return (!name || typeof name !== 'string' || name.trim().length === 0)
-}
-
-// Standard error response for invalid input
-function invalidInputErrorMessage(res, message) {
-    return res.status(400).json({ 'error': { 'code': ERROR_CODES.BAD_REQUEST, 'message': message } })
-}
-
-// Get and validate Teams ID from the URL
-function getTeamIdOr400(req, res) {
-    // Read the teamId from the URL params (eg /teams/1/weekends)
-    const teamId = Number.parseInt(req.params.teamId, 10)
-    // If teamId is missing, not a number, or <= 0, return a 400 error
-    if (!Number.isInteger(teamId) || teamId <= 0) {
-        invalidInputErrorMessage(res, 'Team id must be a positive integer')
-        // Return null so the caller can stop
-        return null
-    }
-    return teamId
-}
-// Get and validate Weekends ID from the URL
-function getWeekendIdOr400(req, res) {
-    // Read the weekendId from the URL params (eg /teams/1/weekends/2)
-    const weekendId = Number.parseInt(req.params.weekendId, 10)
-    // If weekendId is missing, not a number, or <= 0, return a 400 error
-    if (!Number.isInteger(weekendId) || weekendId <= 0) {
-        invalidInputErrorMessage(res, 'Weekend id must be a positive integer')
-        // Return null so the caller can stop
-        return null
-    }
-    return weekendId
-}
-// Find a weekend by teamId and weekendId or return a 404
-function getWeekendOr404(res, teamId, weekendId) {
-    const weekend = findWeekendByTeamAndId(teamId, weekendId)
-    if (!weekend) {
-        res.status(404).json({ 'error': { 'code': ERROR_CODES.NOT_FOUND, 'message': 'Weekend not found' } })
-        return null
-    }
-    return weekend
-}
+const {
+    getTeamIdOr400,
+    getWeekendIdOr400,
+    getWeekendOr404,
+} = require('../utils/request-validators')
 
 /**
  * POST /teams/:teamId/weekends
@@ -73,13 +35,17 @@ function createWeekend(req, res) {
     // Stop if teamId is invalid
     if (teamId === null) { return }
     // Pull the weekend name from the request body
-    const { name: name } = req.body || {}
+    const { name } = req.body || {}
 
     // Validate weekend name before continuing
-    if (isInvalidName(name)) { return invalidInputErrorMessage(res, 'Weekend name is required') }
+    // check name is string before checking it's length to avoid an error
+    // Check if a name is missing or empty after trimming
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+        return res.status(400).json({ 'error': { 'code': ERROR_CODES.NOT_FOUND, 'message': 'Weekend name is required' } })
+    }
 
     // some() checks if at least one item passes a test
-    const teamExists = teams.some((team) => team.id === teamId)
+    const teamExists = teamExistsById(teamId)
 
     if (!teamExists) {
         return res.status(404).json({ 'error': { 'code': ERROR_CODES.NOT_FOUND, 'message': 'Team not found' } })
@@ -113,7 +79,7 @@ function listWeekends(req, res) {
     if (teamId === null) { return }
 
     // Make sure the team exists before listing
-    const teamExists = teams.some((team) => team.id === teamId)
+    const teamExists = teamExistsById(teamId)
     if (!teamExists) {
         return res.status(404).json({ 'error': { 'code': ERROR_CODES.NOT_FOUND, 'message': 'Team not found' } })
     }
@@ -132,7 +98,7 @@ function getWeekend(req, res) {
     if (teamId === null || weekendId === null) { return }
 
     // Make sure the team exists before searching
-    const teamExists = teams.some((team) => team.id === teamId)
+    const teamExists = teamExistsById(teamId)
     if (!teamExists) {
         return res.status(404).json({ 'error': { 'code': ERROR_CODES.NOT_FOUND, 'message': 'Team not found' } })
     }
@@ -146,7 +112,7 @@ function getWeekend(req, res) {
 
 
 // POST /teams/{teamId}/weekends/{weekendId}/transition - transition weekend stage
-// Body: { 'toStage': 'Qualifying', 'toSegment': 'Q2' }
+// Body: { 'toStage': 'Qualifying', 'toSegment': 'Q2', 'actorRole : 'ENGINEER', actoreName: 'Jack Brierly'}
 function transitionWeekendStage(req, res) {
     const { toStage: toStage, toSegment: toSegment, actorRole: actorRole, actorName: actorName } = req.body || {}
 
@@ -171,7 +137,7 @@ function transitionWeekendStage(req, res) {
     if (teamId === null || weekendId === null) { return }
 
     // Make sure the team exists before searching
-    const teamExists = teams.some((team) => team.id === teamId)
+    const teamExists = teamExistsById(teamId)
     if (!teamExists) {
         return res.status(409).json({ 'error': { 'code': ERROR_CODES.NOT_FOUND, 'message': 'Team not found' } })
     }
@@ -236,9 +202,6 @@ function transitionWeekendStage(req, res) {
     }
 
     logAuditTransition(weekendTransitionAudit)
-
-    getWeekendOr404(res, teamId, weekendId)
-
 
     return res.status(201).json(weekend)
 }

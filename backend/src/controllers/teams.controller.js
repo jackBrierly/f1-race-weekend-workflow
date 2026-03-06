@@ -2,7 +2,13 @@
 
 // Import the shared teams list and the id generator
 // {} is used when you want specific properties from an object (destructuring)
-const { teams, getNextTeamId } = require('../data/teams.data')
+const {
+  addTeam,
+  listTeams,
+  findTeamById,
+  teamNameExists,
+  getNextTeamId,
+} = require('../data/teams.data')
 const { ERROR_CODES } = require('../constants/error-codes')
 
 /**
@@ -20,7 +26,7 @@ function createTeam(req, res) {
 
   const trimmedName = name.trim()
   const normalisedName = trimmedName.toLowerCase()
-  const duplicateTeam = teams.some((team) => team.name.toLowerCase() === normalisedName)
+  const duplicateTeam = teamNameExists(normalisedName)
   if (duplicateTeam) {
     return res.status(409).json({ 'error': { 'code': ERROR_CODES.DUPLICATE, 'message': 'Team name already exists' } })
   }
@@ -33,7 +39,7 @@ function createTeam(req, res) {
   }
 
   // Store the new team in memory
-  teams.push(team)
+  addTeam(team)
 
   // Respond with HTTP 201 (Created) and return the created team in the response body
   return res.status(201).json(team)
@@ -42,9 +48,9 @@ function createTeam(req, res) {
 /**
  * GET /teams
  */
-function listTeams(req, res) {
+function getTeams(req, res) {
   // Return all teams currently in memory
-  return res.status(200).json(teams)
+  return res.status(200).json(listTeams())
 }
 
 function getTeam(req, res) {
@@ -56,7 +62,7 @@ function getTeam(req, res) {
     })
   }
 
-  const team = teams.find((t) => t.id === teamId)
+  const team = findTeamById(teamId)
 
   if (!team) {
     return res.status(404).json({
@@ -69,6 +75,6 @@ function getTeam(req, res) {
 
 module.exports = {
   createTeam,
-  listTeams,
+  getTeams,
   getTeam,
 }

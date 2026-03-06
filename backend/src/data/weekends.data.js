@@ -7,6 +7,39 @@ function getNextWeekendId() {
   return nextWeekendId++
 }
 
+function getWeekend(weekendId) {
+  const weekend = weekends.find(w => w.id === weekendId)
+
+  if (!weekend) {
+    throw new Error('Weekend not found')
+  }
+  return weekend
+}
+
+function weekendExistsForTeam(weekendId, teamId) {
+    return weekends.some((weekend) => weekend.id === weekendId && weekend.teamId === teamId) 
+}
+
+function getNextVersionNumber(weekendId) {
+  const weekend = getWeekend(weekendId)
+
+  weekend.currentSetupVersionNumber += 1
+
+  return weekend.currentSetupVersionNumber
+}
+
+function getStage(weekendId) {
+  const weekend = getWeekend(weekendId)
+
+  return weekend.stage
+}
+
+function getSegment(weekendId) {
+  const weekend = getWeekend(weekendId)
+
+  return weekend.segment
+}
+
 function addWeekend(weekend) {
   weekends.push(weekend)
   return weekend
@@ -36,5 +69,9 @@ module.exports = {
   listWeekendsByTeam,
   weekendNameExistsForTeam,
   getNextWeekendId,
+  getNextVersionNumber,
+  getStage,
+  getSegment,
   resetWeekends,
+  weekendExistsForTeam,
 }

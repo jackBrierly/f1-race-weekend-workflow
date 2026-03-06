@@ -1,0 +1,26 @@
+// Import Express so we can create a router for these endpoints
+const express = require('express')
+
+// Create a new router instance
+// mergeParams: true allows this router to access route parameters
+// from parent routes (e.g. teamId and weekendId from /teams/:teamId/weekends/:weekendId)
+const router = express.Router({ mergeParams: true })
+
+const { 
+    createSetupVersion,
+    listSetupVersionsForWeekend,
+    getSetupVersion,
+} = require('../controllers/setupVersions.controller')
+
+// POST /setupVersions
+// Create setup version is called when approved or when not in need of approval 
+router.post('/', createSetupVersion)
+
+// GET /setupVersions
+// Get all setup versions
+router.get('/', listSetupVersionsForWeekend)
+
+// we expore as router and not { router } so that the file exports the router directly
+// so when weekends.router calls const setupVersionsRouter = require('./setupVersions.routes')
+// that is assigning the router to setupVersionsRouter
+module.exports = router
