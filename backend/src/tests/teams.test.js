@@ -1,6 +1,6 @@
 const request = require('supertest')
 const app = require('../app')
-const { resetTeams } = require('../data/teams.data')
+const { resetTeams } = require('../models/teams.model')
 
 // Small helper so we don't repeat POST boilerplate everywhere
 async function createTeam(name) {

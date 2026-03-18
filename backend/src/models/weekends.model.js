@@ -1,135 +1,156 @@
-/**
- * This file defines the Weekend "model"
- * The model defines what the data can look like and how it is allowed to change
- * Controllers decide when those values can change and make the change happen
- */
-
 const { WORKFLOW_STAGES_ORDER, WORKFLOW_STAGES } = require('../constants/workflow-stages')
-const { 
-  QUALIFYING_SEGMENTS_ORDER, 
+const {
+  QUALIFYING_SEGMENTS_ORDER,
   QUALIFYING_SEGMENTS,
   PRACTICE_SEGMENTS_ORDER,
   PRACTICE_SEGMENTS,
 } = require('../constants/segments')
 
-const { getNextWeekendId } = require('../data/weekends.data')
+let nextWeekendId = 1
+const weekends = []
 
-// Check if a stage is a valid workflow stage
-// This helps avoid magic strings spread throughout the codebase
+function getNextWeekendId() {
+  return nextWeekendId++
+}
+
+function getWeekend(weekendId) {
+  const weekend = weekends.find((value) => value.id === weekendId)
+
+  if (!weekend) {
+    const err = new Error('Weekend not found')
+    err.code = 'WEEKEND_NOT_FOUND'
+    throw err
+  }
+
+  return weekend
+}
+
 function isValidStage(stage) {
   return WORKFLOW_STAGES_ORDER.includes(stage)
 }
 
-// Check if a transition is allowed eg Practice -> Qualifying is true, Qualifying -> Review is false
-// This does not belong in the controller as it doesn't change the data;
-// The actual transition still belongs in the controller
 function canTransition(fromStage, toStage, fromSegment) {
   const fromIndex = WORKFLOW_STAGES_ORDER.indexOf(fromStage)
   const toIndex = WORKFLOW_STAGES_ORDER.indexOf(toStage)
 
   if (fromStage === WORKFLOW_STAGES.QUALIFYING && toStage === WORKFLOW_STAGES.RACE) {
     return fromSegment === QUALIFYING_SEGMENTS.Q3
-  } else if (fromStage === WORKFLOW_STAGES.PRACTICE && toStage === WORKFLOW_STAGES.QUALIFYING) {
-    return fromSegment === PRACTICE_SEGMENTS.P3
-  } 
+  }
 
-  return toIndex === fromIndex + 1 
-        || fromStage === WORKFLOW_STAGES.QUALIFYING && toStage === WORKFLOW_STAGES.QUALIFYING
-        || fromStage === WORKFLOW_STAGES.PRACTICE && toStage === WORKFLOW_STAGES.PRACTICE
+  if (fromStage === WORKFLOW_STAGES.PRACTICE && toStage === WORKFLOW_STAGES.QUALIFYING) {
+    return fromSegment === PRACTICE_SEGMENTS.P3
+  }
+
+  return toIndex === fromIndex + 1
+    || fromStage === WORKFLOW_STAGES.QUALIFYING && toStage === WORKFLOW_STAGES.QUALIFYING
+    || fromStage === WORKFLOW_STAGES.PRACTICE && toStage === WORKFLOW_STAGES.PRACTICE
 }
 
-// Check if a segment is a valid workflow stage
-// This helps avoid magic strings spread throughout the codebase
 function isValidSegment(segment) {
   return QUALIFYING_SEGMENTS_ORDER.includes(segment) || PRACTICE_SEGMENTS_ORDER.includes(segment)
 }
 
 function canTransitionSegment(fromSegment, toSegment, toStage) {
-  // ensure there does not exist a segment for race or review
   if (toStage === WORKFLOW_STAGES.RACE || toStage === WORKFLOW_STAGES.REVIEW) {
     return toSegment === null
   }
 
-  // if from P3 to qualifying NULL
   if (fromSegment === PRACTICE_SEGMENTS.P3 && toSegment === PRACTICE_SEGMENTS.NULL) {
     return true
   }
 
-  let segments_order
+  let segmentsOrder
   if (toStage === WORKFLOW_STAGES.QUALIFYING) {
-    segments_order = QUALIFYING_SEGMENTS_ORDER
+    segmentsOrder = QUALIFYING_SEGMENTS_ORDER
   } else if (toStage === WORKFLOW_STAGES.PRACTICE) {
-    segments_order = PRACTICE_SEGMENTS_ORDER
+    segmentsOrder = PRACTICE_SEGMENTS_ORDER
   } else {
     return false
   }
 
-  const fromIndex = segments_order.indexOf(fromSegment)
-  const toIndex = segments_order.indexOf(toSegment)
+  const fromIndex = segmentsOrder.indexOf(fromSegment)
+  const toIndex = segmentsOrder.indexOf(toSegment)
 
   return toIndex === fromIndex + 1
 }
 
-/**
- * Create a new Weekend object with validated fields and defaults
- * This function centralises the rules for what a Weekend is
- *
- * IMPORTANT
- * - This does NOT save the weekend anywhere
- * - This does NOT handle HTTP requests or responses
- * - It only constructs a valid Weekend object
- *
- * @param {Object} params
- * @param {number} params.id - Unique weekend identifier
- * @param {number} params.teamId - ID of the owning team
- * @param {string} params.name - Human-readable weekend name
- * @returns {Object} Weekend
- */
-function initialiseWeekend({ teamId, name }) {
-  // Ensure the name is a trimmed string to avoid whitespace-only values
-  const trimmedName = typeof name === 'string' ? name.trim() : ''
-
-  if (!Number.isInteger(teamId) || teamId <= 0) {
-    throw new Error('Invalid teamId')
-  }
-
-  if (!trimmedName) {
-    throw new Error('Weekend name is required')
-  }
-
-  // Use ISO timestamps so values are consistent and DB-friendly
+function createWeekend(teamId, name) {
   const now = new Date().toISOString()
-
-  // Return a plain object representing the Weekend
-  // This is intentionally NOT a class
-  return {
+  const weekend = {
     id: getNextWeekendId(),
     teamId,
-    name: trimmedName,
-
-    // For setupVersions to use to increment their versionNumber
+    name,
     currentSetupVersionNumber: 0,
-
-    // Workflow state
-    // All weekends always start in Practice
     stage: WORKFLOW_STAGES.PRACTICE,
-
-    // Optional sub-stage (eg Q1/Q2/Q3 or P1/P2/P3), null when not applicable
     segment: null,
-
-    // Timestamps for auditability and future ordering
     createdAt: now,
     updatedAt: now,
   }
+
+  weekends.push(weekend)
+  return weekend
 }
 
-// Export helpers so controllers can
-// - validate stages
-// - construct weekends safely
+function findWeekendByTeamAndId(teamId, weekendId) {
+  return weekends.find((weekend) => weekend.teamId === teamId && weekend.id === weekendId) || null
+}
+
+function listWeekendsByTeam(teamId) {
+  return weekends.filter((weekend) => weekend.teamId === teamId)
+}
+
+function weekendNameExistsForTeam(teamId, name) {
+  return weekends.some((weekend) => weekend.teamId === teamId && weekend.name === name)
+}
+
+function weekendExistsForTeam(weekendId, teamId) {
+  return weekends.some((weekend) => weekend.id === weekendId && weekend.teamId === teamId)
+}
+
+function getNextVersionNumber(weekendId) {
+  const weekend = getWeekend(weekendId)
+  weekend.currentSetupVersionNumber += 1
+  return weekend.currentSetupVersionNumber
+}
+
+function getStage(weekendId) {
+  return getWeekend(weekendId).stage
+}
+
+function getSegment(weekendId) {
+  return getWeekend(weekendId).segment
+}
+
+function transitionWeekendStage(weekendId, toStage, toSegment) {
+  const weekend = getWeekend(weekendId)
+  weekend.stage = toStage
+
+  if (toSegment !== undefined) {
+    weekend.segment = toSegment
+  }
+
+  weekend.updatedAt = new Date().toISOString()
+  return weekend
+}
+
+function resetWeekends() {
+  weekends.length = 0
+  nextWeekendId = 1
+}
+
 module.exports = {
+  createWeekend,
+  findWeekendByTeamAndId,
+  listWeekendsByTeam,
+  weekendNameExistsForTeam,
+  weekendExistsForTeam,
+  getNextVersionNumber,
+  getStage,
+  getSegment,
+  transitionWeekendStage,
+  resetWeekends,
   isValidStage,
   canTransition,
-  initialiseWeekend,
   isValidSegment,
-  canTransitionSegment
+  canTransitionSegment,
 }

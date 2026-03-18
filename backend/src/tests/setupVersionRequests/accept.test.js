@@ -1,9 +1,9 @@
 const request = require('supertest')
 const app = require('../../app')
-const { resetTeams } = require('../../data/teams.data')
-const { resetWeekends } = require('../../data/weekends.data')
+const { resetTeams } = require('../../models/teams.model')
+const { resetWeekends } = require('../../models/weekends.model')
 const { resetAudit } = require('../../data/audit.data')
-const { resetSetupVersions } = require('../../data/setupVersions.data')
+const { resetSetupVersions } = require('../../models/setupVersions.model')
 const { ROLES } = require('../../constants/roles')
 const { resetSetupVersionsRequests } = require('../../models/setupVersionsRequests.model')
 const {

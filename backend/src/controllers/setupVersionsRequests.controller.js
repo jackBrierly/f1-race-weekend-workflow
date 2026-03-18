@@ -3,33 +3,8 @@ const {
     requireNonEmptyObject,
     requireNonEmptyString,
 } = require('../utils/request-validators')
-
+const { withErrorHandling } = require('../utils/controller-error-handler')
 const setupVersionsRequestsService = require('../services/setupVersionsRequests.service')
-
-function withErrorHandling(res, fn) {
-    try {
-        return fn()
-    } catch (err) {
-        return mapErrorToHttp(res, err)
-    }
-}
-
-
-function mapErrorToHttp(res, err) {
-    if (['INVALID_ID', 'INVALID_OBJECT', 'INVALID_STRING', 'INVALID_ROLE', 'INVALID_USER', 'INVALID_REQUEST_STATUS'].includes(err.code))
-        return res.status(400).json({ error: { code: 400, message: err.message } })
-
-    if (['TEAM_NOT_FOUND', 'WEEKEND_NOT_FOUND', 'SETUP_VERSION_REQUEST_NOT_FOUND'].includes(err.code))
-        return res.status(404).json({ error: { code: 404, message: err.message } })
-
-    if (err.code === 'INVALID_STAGE')
-        return res.status(409).json({ error: { code: 409, message: err.message } })
-
-    // Any other error is unexpected (bug, system issue, etc.)
-    return res.status(500).json({
-        error: { code: 500, message: err.message }
-    })
-}
 
 exports.listSetupVersionsRequestsForWeekend = (req, res) => {
     let { teamId, weekendId } = req.params

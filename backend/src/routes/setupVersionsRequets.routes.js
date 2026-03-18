@@ -7,7 +7,6 @@ const express = require('express')
 const router = express.Router({ mergeParams: true })
 
 const setupVersionsRequestsController = require('../controllers/setupVersionsRequests.controller')
-const { listSetupVersionsForWeekend } = require('../data/setupVersions.data')
 
 // POST /setupVersionsRequests
 // Create setup version is called when approved or when not in need of approval 

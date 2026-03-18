@@ -1,14 +1,13 @@
-// In-memory teams storage (shared across controllers)
 let nextTeamId = 1
 const teams = []
-// Keep storage private; only modify via the helpers below.
 
-function getNextTeamId() {
-  // Return the current id and then increment it for next time
-  return nextTeamId++
-}
+function createTeam(name) {
+  const team = {
+    id: nextTeamId++,
+    name,
+    createdAt: new Date().toISOString(),
+  }
 
-function addTeam(team) {
   teams.push(team)
   return team
 }
@@ -30,16 +29,15 @@ function teamNameExists(normalisedName) {
 }
 
 function resetTeams() {
-  teams.length = 0   // clear array in-place
+  teams.length = 0
   nextTeamId = 1
 }
 
 module.exports = {
-  addTeam,
+  createTeam,
   listTeams,
   findTeamById,
   teamExistsById,
   teamNameExists,
-  getNextTeamId,
   resetTeams,
 }

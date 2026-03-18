@@ -1,10 +1,9 @@
 const setupVersionsRequestsModel = require('../models/setupVersionsRequests.model')
 const setupVersionsModel = require('../models/setupVersions.model')
-const { getStage } = require('../data/weekends.data')
+const weekendsModel = require('../models/weekends.model')
 const { WORKFLOW_STAGES } = require('../constants/workflow-stages')
 const { ROLES } = require('../constants/roles')
-const { teamExistsById } = require('../data/teams.data')
-const { weekendExistsForTeam } = require('../data/weekends.data')
+const teamsModel = require('../models/teams.model')
 
 exports.createSetupVersion = (teamId, weekendId, parameters, createdBy, createdByRole, setupVersionRequestId) => {
 
@@ -22,20 +21,20 @@ exports.createSetupVersion = (teamId, weekendId, parameters, createdBy, createdB
     */
 
     // teamId must exist
-    if (!teamExistsById(teamId)) {
+    if (!teamsModel.teamExistsById(teamId)) {
         const err = new Error('Team not found')
         err.code = 'TEAM_NOT_FOUND'
         throw err
     }
 
     // weekendId must exist for this team
-    if (!weekendExistsForTeam(weekendId, teamId)) {
+    if (!weekendsModel.weekendExistsForTeam(weekendId, teamId)) {
         const err = new Error('Weekend not found for this team')
         err.code = 'WEEKEND_NOT_FOUND'
         throw err
     }
 
-    const stage = getStage(weekendId)
+    const stage = weekendsModel.getStage(weekendId)
 
     if (setupVersionRequestId !== null) {
         if (!setupVersionsRequestsModel.setupVersionRequestExistsForWeekend(setupVersionRequestId, weekendId)) {
@@ -68,4 +67,20 @@ exports.createSetupVersion = (teamId, weekendId, parameters, createdBy, createdB
     }
 
     return setupVersionsModel.createSetupVersion(teamId, weekendId, parameters, createdBy, createdByRole, setupVersionRequestId)
+}
+
+exports.listSetupVersionsForWeekend = (teamId, weekendId) => {
+    if (!teamsModel.teamExistsById(teamId)) {
+        const err = new Error('Team not found')
+        err.code = 'TEAM_NOT_FOUND'
+        throw err
+    }
+
+    if (!weekendsModel.weekendExistsForTeam(weekendId, teamId)) {
+        const err = new Error('Weekend not found for this team')
+        err.code = 'WEEKEND_NOT_FOUND'
+        throw err
+    }
+
+    return setupVersionsModel.listSetupVersionsForWeekend(weekendId)
 }

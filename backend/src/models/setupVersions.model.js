@@ -1,20 +1,19 @@
-/**
- * This file defines the Setup Version "model"
- * A saved snapshot of the car setup that the team can reference (“what the setup was at this moment”).
- */
-
-const { getNextSetupVersionId, setupVersions } = require('../data/setupVersions.data')
-
 const {
-    getCurrentSession,
     getNextVersionNumber,
     getStage,
     getSegment,
-} = require('../data/weekends.data')
+} = require('./weekends.model')
 
 const { ROLES } = require('../constants/roles')
 const { WORKFLOW_STAGES } = require('../constants/workflow-stages')
 const { STATES } = require('../constants/states')
+
+let nextSetupVersionId = 1
+const setupVersions = []
+
+function getNextSetupVersionId() {
+    return nextSetupVersionId++
+}
 
 function createSetupVersion(teamId, weekendId, parameters, createdBy, createdByRole, setupVersionRequestId) {
     const setupVersion = {
@@ -34,6 +33,15 @@ function createSetupVersion(teamId, weekendId, parameters, createdBy, createdByR
     setupVersions.push(setupVersion)
 
     return setupVersion
+}
+
+function listSetupVersionsForWeekend(weekendId) {
+    return setupVersions.filter((setupVersion) => setupVersion.weekendId === weekendId)
+}
+
+function resetSetupVersions() {
+    setupVersions.length = 0
+    nextSetupVersionId = 1
 }
 
 function canCreateSetup(stage) {
@@ -122,4 +130,10 @@ function initialiseSetupVersion({ teamId, weekendId, changeRequestId = null, par
     }
 }
 
-module.exports = { initialiseSetupVersion, canCreateSetup, createSetupVersion }
+module.exports = {
+    initialiseSetupVersion,
+    canCreateSetup,
+    createSetupVersion,
+    listSetupVersionsForWeekend,
+    resetSetupVersions,
+}
