@@ -1,15 +1,30 @@
-const { ROLES } = require('../../constants/roles')
-const { baseParameters } = require('./api')
+const request = require('supertest')
 
-function setupVersionsRequestsBasePayload(overrides = {}) {
-    return {
-        parameters: baseParameters(),
-        requestedBy: 'Jack Brierly',
-        requestedByRole: ROLES.ENGINEER,
-        requestedTo: 'John Parker',
-        requestedToRole: ROLES.LEAD_ENGINEER,
-        ...overrides,
-    }
+async function postSetupVersionRequest(app, teamId, weekendId, payload) {
+    return request(app)
+        .post(`/teams/${teamId}/weekends/${weekendId}/setupVersionsRequests`)
+        .send(payload)
 }
 
-module.exports = { setupVersionsRequestsBasePayload }
+async function postAcceptSetupVersionRequest(app, teamId, weekendId, requestId, payload) {
+    return request(app)
+        .post(`/teams/${teamId}/weekends/${weekendId}/setupVersionsRequests/${requestId}/accept`)
+        .send(payload)
+}
+
+async function postDeclineSetupVersionRequest(app, teamId, weekendId, requestId, payload) {
+    return request(app)
+        .post(`/teams/${teamId}/weekends/${weekendId}/setupVersionsRequests/${requestId}/decline`)
+        .send(payload)
+}
+
+async function listSetupVersionRequests(app, teamId, weekendId) {
+    return request(app).get(`/teams/${teamId}/weekends/${weekendId}/setupVersionsRequests`)
+}
+
+module.exports = {
+    postSetupVersionRequest,
+    postAcceptSetupVersionRequest,
+    postDeclineSetupVersionRequest,
+    listSetupVersionRequests,
+}

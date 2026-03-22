@@ -1,10 +1,29 @@
 const request = require('supertest')
 const app = require('../app')
-const { resetTeams } = require('../models/teams.model')
+const { resetTeams, teamExistsById } = require('../models/teams.model')
+const {
+  postTeam: apiPostTeam,
+  listTeams: apiListTeams,
+  getTeam: apiGetTeam,
+} = require('./helpers/teams')
 
-// Small helper so we don't repeat POST boilerplate everywhere
-async function createTeam(name) {
-  return request(app).post('/teams').send({ name })
+function postTeamPayload(overrides = {}) {
+  return {
+    name: 'McLaren',
+    ...overrides,
+  }
+}
+
+async function postTeam(overrides = {}) {
+  return apiPostTeam(app, postTeamPayload(overrides))
+}
+
+async function listTeams() {
+  return apiListTeams(app)
+}
+
+async function getTeam(teamId) {
+  return apiGetTeam(app, teamId)
 }
 
 beforeEach(() => {
@@ -13,15 +32,14 @@ beforeEach(() => {
 
 describe('Teams API', () => {
   describe('POST /teams', () => {
-    test('201 when name is provided', async () => {
-      const res = await createTeam('McLaren')
-      expect(res.statusCode).toBe(201)
-      expect(res.body.name).toBe('McLaren')
-    })
 
-    test('trims name and returns id/createdAt', async () => {
-      const res = await createTeam('  Ferrari  ')
-      expect(res.statusCode).toBe(201)
+    // Happy Path and Contract Test
+    test('returns the created team body in JSON', async () => {
+      const res = await postTeam({ name: '  Ferrari  ' })
+      
+
+      expect(res.statusCode).toBe(201) 
+      expect(res.headers['content-type']).toEqual(expect.stringContaining('json'))
       expect(res.body).toEqual(expect.objectContaining({
         id: expect.any(Number),
         name: 'Ferrari',
@@ -29,68 +47,178 @@ describe('Teams API', () => {
       }))
     })
 
-    test('400 when name is missing', async () => {
-      const res = await request(app).post('/teams').send({})
-      expect(res.statusCode).toBe(400)
-    })
+    // Validation Tests and Existence Tests
+    describe('invalid body', () => {
 
-    test('400 when name is whitespace', async () => {
-      const res = await createTeam('   ')
-      expect(res.statusCode).toBe(400)
-    })
+      test('name missing returns 400', async () => {
+        const payload = postTeamPayload()
+        delete payload.name
 
-    test('400 when name is not a string', async () => {
-      const res = await createTeam(123)
-      expect(res.statusCode).toBe(400)
-    })
+        const res = await request(app).post('/teams').send(payload)
 
-    test('409 when name already exists (case-insensitive + trimmed)', async () => {
-      await createTeam('Mercedes')
-      const dup = await createTeam(' mercedes ')
-      expect(dup.statusCode).toBe(409)
-    })
+        expect(res.statusCode).toBe(400)
+        expect(res.body).toEqual({
+          error: {
+            code: 400,
+            message: 'Team name must be a non-empty string',
+          },
+        })
+      })
 
-    test('Content-Type is JSON', async () => {
-      const res = await createTeam('Ferrari')
-      expect(res.headers['content-type']).toEqual(expect.stringContaining('json'))
+      describe('name invalid returns 400', () => {
+        test.each([
+          ['number', 123],
+          ['boolean', true],
+          ['null', null],
+          ['object', {}],
+          ['array', []],
+          ['whitespace', '   '],
+        ])('name as %s returns 400', async (_, name) => {
+          const res = await postTeam({ name })
+
+          expect(res.statusCode).toBe(400)
+          expect(res.body).toEqual({
+            error: {
+              code: 400,
+              message: 'Team name must be a non-empty string',
+            },
+          })
+        })
+      })
+
+      test('duplicate exact name returns 409', async () => {
+        await postTeam({ name: 'Mercedes' })
+
+        const res = await postTeam({ name: 'Mercedes' })
+
+        expect(res.statusCode).toBe(409)
+        expect(res.body).toEqual({
+          error: {
+            code: 409,
+            message: 'Team name already exists',
+          },
+        })
+      })
+
+      test('duplicate trimmed and case-insensitive name returns 409', async () => {
+        await postTeam({ name: 'Mercedes' })
+
+        const res = await postTeam({ name: ' mercedes ' })
+
+        expect(res.statusCode).toBe(409)
+        expect(res.body).toEqual({
+          error: {
+            code: 409,
+            message: 'Team name already exists',
+          },
+        })
+      })
     })
   })
 
   describe('GET /teams', () => {
-    test('200 and [] when empty', async () => {
-      const res = await request(app).get('/teams')
+    test('200 and [] when no teams exist', async () => {
+      const res = await listTeams()
+
       expect(res.statusCode).toBe(200)
       expect(res.body).toEqual([])
     })
 
-    test('returns created teams', async () => {
-      const a = await createTeam('Alpha')
-      const b = await createTeam('Beta')
+    test('200 and returns created teams in insertion order and JSON', async () => {
+      const first = await postTeam({ name: '  AlphaTauri  ' })
+      const second = await postTeam({ name: 'Williams' })
 
-      const res = await request(app).get('/teams')
+      const res = await listTeams()
+
       expect(res.statusCode).toBe(200)
-      expect(res.body.map(t => t.id)).toEqual([a.body.id, b.body.id])
+      expect(res.headers['content-type']).toEqual(expect.stringContaining('json'))
+      expect(res.body).toEqual([
+        expect.objectContaining({
+          id: first.body.id,
+          name: 'AlphaTauri',
+          createdAt: expect.any(String),
+        }),
+        expect.objectContaining({
+          id: second.body.id,
+          name: 'Williams',
+          createdAt: expect.any(String),
+        }),
+      ])
     })
   })
 
   describe('GET /teams/:teamId', () => {
-    test('200 and returns the team when it exists', async () => {
-      const created = await createTeam('Red Bull')
-      const res = await request(app).get(`/teams/${created.body.id}`)
+    test('200 and returns the requested team', async () => {
+      const created = await postTeam({ name: 'Red Bull' })
+
+      const res = await getTeam(created.body.id)
 
       expect(res.statusCode).toBe(200)
-      expect(res.body.id).toBe(created.body.id)
-      expect(res.body.name).toBe('Red Bull')
+      expect(res.body).toEqual(expect.objectContaining({
+        id: created.body.id,
+        name: 'Red Bull',
+        createdAt: expect.any(String),
+      }))
     })
 
-    test('404 when team does not exist', async () => {
-      const res = await request(app).get('/teams/999')
-      expect(res.statusCode).toBe(404)
+    test('200 and existing team is returned in JSON', async () => {
+      const created = await postTeam({ name: 'Aston Martin' })
+
+      const res = await getTeam(created.body.id)
+
+      expect(res.statusCode).toBe(200)
+      expect(res.headers['content-type']).toEqual(expect.stringContaining('json'))
+      expect(res.body).toEqual({
+        id: created.body.id,
+        name: 'Aston Martin',
+        createdAt: expect.any(String),
+      })
     })
 
-    test('400 when teamId is not a positive integer', async () => {
-      const res = await request(app).get('/teams/not-a-number')
-      expect(res.statusCode).toBe(400)
+    describe('invalid body', () => {
+      describe('teamId invalid returns 400', () => {
+        test.each([
+          ['string', 'not-a-number'],
+          ['float', 1.1],
+          ['boolean', true],
+          ['zero', 0],
+          ['negative', -1],
+        ])('teamId as %s returns 400', async (_, teamId) => {
+          const res = await getTeam(teamId)
+
+          expect(res.statusCode).toBe(400)
+          expect(res.body).toEqual({
+            error: {
+              code: 400,
+              message: 'Team id must be a positive integer',
+            },
+          })
+        })
+      })
+
+      test('team not found returns 404', async () => {
+        const res = await getTeam(999)
+
+        expect(res.statusCode).toBe(404)
+        expect(res.body).toEqual({
+          error: {
+            code: 404,
+            message: 'Team not found',
+          },
+        })
+      })
+    })
+  })
+
+  describe('teams.model helpers', () => {
+    // This is tested as it is not exercised by the teams endpoints.
+    test('teamExistsById returns true only for teams that exist', async () => {
+      expect(teamExistsById(1)).toBe(false)
+
+      const created = await postTeam({ name: 'Kick Sauber' })
+
+      expect(teamExistsById(created.body.id)).toBe(true)
+      expect(teamExistsById(created.body.id + 1)).toBe(false)
     })
   })
 })

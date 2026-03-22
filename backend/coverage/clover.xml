@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<coverage generated="1774192514301" clover="3.2.0">
+  <project timestamp="1774192514301" name="All files">
+    <metrics statements="157" coveredstatements="157" conditionals="28" coveredconditionals="22" methods="26" coveredmethods="26" elements="211" coveredelements="205" complexity="0" loc="157" ncloc="157" packages="2" files="8" classes="8"/>
+    <package name="controllers">
+      <metrics statements="122" coveredstatements="122" conditionals="28" coveredconditionals="22" methods="26" coveredmethods="26"/>
+      <file name="setupVersions.controller.js" path="/Users/jackbrierly/Desktop/f1-race-weekend-workflow/backend/src/controllers/setupVersions.controller.js">
+        <metrics statements="22" coveredstatements="22" conditionals="4" coveredconditionals="3" methods="4" coveredmethods="4"/>
+        <line num="5" count="6" type="stmt"/>
+        <line num="6" count="6" type="stmt"/>
+        <line num="7" count="6" type="stmt"/>
+        <line num="10" count="42" type="stmt"/>
+        <line num="16" count="42" type="cond" truecount="1" falsecount="1"/>
+        <line num="18" count="42" type="stmt"/>
+        <line num="19" count="42" type="stmt"/>
+        <line num="20" count="37" type="stmt"/>
+        <line num="22" count="32" type="cond" truecount="2" falsecount="0"/>
+        <line num="23" count="10" type="stmt"/>
+        <line num="26" count="26" type="stmt"/>
+        <line num="27" count="21" type="stmt"/>
+        <line num="28" count="17" type="stmt"/>
+        <line num="30" count="13" type="stmt"/>
+        <line num="39" count="5" type="stmt"/>
+        <line num="44" count="15" type="stmt"/>
+        <line num="46" count="15" type="stmt"/>
+        <line num="47" count="15" type="stmt"/>
+        <line num="48" count="10" type="stmt"/>
+        <line num="50" count="5" type="stmt"/>
+        <line num="51" count="3" type="stmt"/>
+        <line num="55" count="6" type="stmt"/>
+      </file>
+      <file name="setupVersionsRequests.controller.js" path="/Users/jackbrierly/Desktop/f1-race-weekend-workflow/backend/src/controllers/setupVersionsRequests.controller.js">
+        <metrics statements="45" coveredstatements="45" conditionals="6" coveredconditionals="3" methods="8" coveredmethods="8"/>
+        <line num="5" count="6" type="stmt"/>
+        <line num="6" count="6" type="stmt"/>
+        <line num="7" count="6" type="stmt"/>
+        <line num="9" count="6" type="stmt"/>
+        <line num="10" count="15" type="stmt"/>
+        <line num="12" count="15" type="stmt"/>
+        <line num="13" count="15" type="stmt"/>
+        <line num="14" count="10" type="stmt"/>
+        <line num="16" count="5" type="stmt"/>
+        <line num="17" count="3" type="stmt"/>
+        <line num="21" count="6" type="stmt"/>
+        <line num="38" count="36" type="stmt"/>
+        <line num="44" count="36" type="cond" truecount="1" falsecount="1"/>
+        <line num="47" count="36" type="stmt"/>
+        <line num="49" count="36" type="stmt"/>
+        <line num="50" count="31" type="stmt"/>
+        <line num="51" count="26" type="stmt"/>
+        <line num="55" count="21" type="stmt"/>
+        <line num="56" count="16" type="stmt"/>
+        <line num="58" count="12" type="stmt"/>
+        <line num="62" count="4" type="stmt"/>
+        <line num="65" count="6" type="stmt"/>
+        <line num="82" count="34" type="stmt"/>
+        <line num="88" count="34" type="cond" truecount="1" falsecount="1"/>
+        <line num="91" count="34" type="stmt"/>
+        <line num="93" count="34" type="stmt"/>
+        <line num="94" count="29" type="stmt"/>
+        <line num="95" count="24" type="stmt"/>
+        <line num="99" count="19" type="stmt"/>
+        <line num="100" count="14" type="stmt"/>
+        <line num="102" count="10" type="stmt"/>
+        <line num="104" count="3" type="stmt"/>
+        <line num="108" count="6" type="stmt"/>
+        <line num="130" count="119" type="stmt"/>
+        <line num="139" count="119" type="cond" truecount="1" falsecount="1"/>
+        <line num="142" count="119" type="stmt"/>
+        <line num="144" count="119" type="stmt"/>
+        <line num="145" count="114" type="stmt"/>
+        <line num="148" count="109" type="stmt"/>
+        <line num="149" count="104" type="stmt"/>
+        <line num="150" count="100" type="stmt"/>
+        <line num="151" count="95" type="stmt"/>
+        <line num="154" count="91" type="stmt"/>
+        <line num="156" count="87" type="stmt"/>
+        <line num="158" count="79" type="stmt"/>
+      </file>
+      <file name="teams.controller.js" path="/Users/jackbrierly/Desktop/f1-race-weekend-workflow/backend/src/controllers/teams.controller.js">
+        <metrics statements="17" coveredstatements="17" conditionals="2" coveredconditionals="1" methods="6" coveredmethods="6"/>
+        <line num="1" count="6" type="stmt"/>
+        <line num="2" count="6" type="stmt"/>
+        <line num="3" count="6" type="stmt"/>
+        <line num="6" count="248" type="cond" truecount="1" falsecount="1"/>
+        <line num="8" count="248" type="stmt"/>
+        <line num="9" count="248" type="stmt"/>
+        <line num="10" count="241" type="stmt"/>
+        <line num="11" count="239" type="stmt"/>
+        <line num="16" count="2" type="stmt"/>
+        <line num="17" count="2" type="stmt"/>
+        <line num="18" count="2" type="stmt"/>
+        <line num="23" count="8" type="stmt"/>
+        <line num="25" count="8" type="stmt"/>
+        <line num="26" count="8" type="stmt"/>
+        <line num="27" count="3" type="stmt"/>
+        <line num="28" count="2" type="stmt"/>
+        <line num="32" count="6" type="stmt"/>
+      </file>
+      <file name="weekends.controller.js" path="/Users/jackbrierly/Desktop/f1-race-weekend-workflow/backend/src/controllers/weekends.controller.js">
+        <metrics statements="38" coveredstatements="38" conditionals="16" coveredconditionals="15" methods="8" coveredmethods="8"/>
+        <line num="3" count="6" type="stmt"/>
+        <line num="4" count="6" type="stmt"/>
+        <line num="5" count="6" type="stmt"/>
+        <line num="6" count="6" type="stmt"/>
+        <line num="9" count="229" type="stmt"/>
+        <line num="10" count="229" type="cond" truecount="1" falsecount="1"/>
+        <line num="12" count="229" type="stmt"/>
+        <line num="13" count="229" type="stmt"/>
+        <line num="14" count="224" type="cond" truecount="4" falsecount="0"/>
+        <line num="15" count="7" type="stmt"/>
+        <line num="17" count="217" type="stmt"/>
+        <line num="19" count="217" type="stmt"/>
+        <line num="20" count="214" type="stmt"/>
+        <line num="25" count="8" type="stmt"/>
+        <line num="27" count="8" type="stmt"/>
+        <line num="28" count="8" type="stmt"/>
+        <line num="29" count="3" type="stmt"/>
+        <line num="30" count="2" type="stmt"/>
+        <line num="35" count="16" type="stmt"/>
+        <line num="37" count="16" type="stmt"/>
+        <line num="38" count="16" type="stmt"/>
+        <line num="39" count="11" type="stmt"/>
+        <line num="41" count="6" type="stmt"/>
+        <line num="42" count="3" type="stmt"/>
+        <line num="47" count="708" type="stmt"/>
+        <line num="48" count="708" type="cond" truecount="2" falsecount="0"/>
+        <line num="50" count="708" type="stmt"/>
+        <line num="51" count="708" type="stmt"/>
+        <line num="52" count="703" type="stmt"/>
+        <line num="54" count="698" type="cond" truecount="4" falsecount="0"/>
+        <line num="55" count="2" type="stmt"/>
+        <line num="58" count="696" type="cond" truecount="4" falsecount="0"/>
+        <line num="59" count="5" type="stmt"/>
+        <line num="62" count="691" type="stmt"/>
+        <line num="63" count="691" type="stmt"/>
+        <line num="65" count="691" type="stmt"/>
+        <line num="74" count="678" type="stmt"/>
+        <line num="78" count="6" type="stmt"/>
+      </file>
+    </package>
+    <package name="routes">
+      <metrics statements="35" coveredstatements="35" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+      <file name="setupVersions.routes.js" path="/Users/jackbrierly/Desktop/f1-race-weekend-workflow/backend/src/routes/setupVersions.routes.js">
+        <metrics statements="6" coveredstatements="6" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <line num="2" count="6" type="stmt"/>
+        <line num="7" count="6" type="stmt"/>
+        <line num="13" count="6" type="stmt"/>
+        <line num="17" count="6" type="stmt"/>
+        <line num="21" count="6" type="stmt"/>
+        <line num="26" count="6" type="stmt"/>
+      </file>
+      <file name="setupVersionsRequets.routes.js" path="/Users/jackbrierly/Desktop/f1-race-weekend-workflow/backend/src/routes/setupVersionsRequets.routes.js">
+        <metrics statements="8" coveredstatements="8" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <line num="2" count="6" type="stmt"/>
+        <line num="7" count="6" type="stmt"/>
+        <line num="9" count="6" type="stmt"/>
+        <line num="13" count="6" type="stmt"/>
+        <line num="17" count="6" type="stmt"/>
+        <line num="21" count="6" type="stmt"/>
+        <line num="24" count="6" type="stmt"/>
+        <line num="33" count="6" type="stmt"/>
+      </file>
+      <file name="teams.routes.js" path="/Users/jackbrierly/Desktop/f1-race-weekend-workflow/backend/src/routes/teams.routes.js">
+        <metrics statements="9" coveredstatements="9" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <line num="1" count="6" type="stmt"/>
+        <line num="3" count="6" type="stmt"/>
+        <line num="10" count="6" type="stmt"/>
+        <line num="13" count="6" type="stmt"/>
+        <line num="16" count="6" type="stmt"/>
+        <line num="19" count="6" type="stmt"/>
+        <line num="21" count="6" type="stmt"/>
+        <line num="23" count="6" type="stmt"/>
+        <line num="25" count="6" type="stmt"/>
+      </file>
+      <file name="weekends.routes.js" path="/Users/jackbrierly/Desktop/f1-race-weekend-workflow/backend/src/routes/weekends.routes.js">
+        <metrics statements="12" coveredstatements="12" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <line num="1" count="6" type="stmt"/>
+        <line num="3" count="6" type="stmt"/>
+        <line num="11" count="6" type="stmt"/>
+        <line num="14" count="6" type="stmt"/>
+        <line num="17" count="6" type="stmt"/>
+        <line num="20" count="6" type="stmt"/>
+        <line num="23" count="6" type="stmt"/>
+        <line num="25" count="6" type="stmt"/>
+        <line num="27" count="6" type="stmt"/>
+        <line num="29" count="6" type="stmt"/>
+        <line num="30" count="6" type="stmt"/>
+        <line num="32" count="6" type="stmt"/>
+      </file>
+    </package>
+  </project>
+</coverage>
