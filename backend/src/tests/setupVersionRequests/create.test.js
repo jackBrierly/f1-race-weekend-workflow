@@ -6,13 +6,17 @@ const { resetAudit } = require('../../data/audit.data')
 const { resetSetupVersions } = require('../../models/setupVersions.model')
 const { resetSetupVersionsRequests } = require('../../models/setupVersionsRequests.model')
 const { ROLES } = require('../../constants/roles')
+const { postTeam } = require('../helpers/teams')
 const {
   createTeamWeekend,
   givenQualifyingWeekend,
+  postWeekend,
+  advanceP1ToQ1,
   advanceP1ToReview,
 } = require('../helpers/weekends')
 const { baseParameters } = require('../helpers/setupVersions')
 const {
+  getSetupVersionRequest: apiGetSetupVersionRequest,
   postSetupVersionRequest: apiPostSetupVersionRequest,
   listSetupVersionRequests: apiListSetupVersionRequests,
 } = require('../helpers/setupVersionsRequests')
@@ -34,6 +38,10 @@ async function postSetupVersionRequest(teamId, weekendId, overrides = {}) {
 
 async function listSetupVersionRequests(teamId, weekendId) {
   return apiListSetupVersionRequests(app, teamId, weekendId)
+}
+
+async function getSetupVersionRequest(teamId, weekendId, setupVersionRequestId) {
+  return apiGetSetupVersionRequest(app, teamId, weekendId, setupVersionRequestId)
 }
 
 beforeEach(() => {
@@ -415,6 +423,121 @@ describe('GET /teams/:teamId/weekends/:weekendId/setupVersionsRequests', () => {
 
       expect(res.statusCode).toBe(200)
       expect(res.body.map((setupVersionRequest) => setupVersionRequest.id)).toEqual([1, 2])
+    })
+  })
+})
+
+describe('GET /teams/:teamId/weekends/:weekendId/setupVersionsRequests/:setupVersionRequestId', () => {
+  test('returns the requested setup version request in JSON', async () => {
+    const { team, weekend } = await givenQualifyingWeekend(app)
+    const created = await postSetupVersionRequest(team.body.id, weekend.body.id)
+
+    const res = await getSetupVersionRequest(team.body.id, weekend.body.id, created.body.id)
+
+    expect(res.statusCode).toBe(200)
+    expect(res.headers['content-type']).toEqual(expect.stringContaining('json'))
+    expect(res.body).toEqual(expect.objectContaining({
+      id: created.body.id,
+      teamId: team.body.id,
+      weekendId: weekend.body.id,
+      status: 'PENDING',
+    }))
+  })
+
+  // Invalid path
+  describe('invalid path', () => {
+    describe('teamId invalid returns 400', () => {
+      test.each([
+        ['string', 'one'],
+        ['float', 1.1],
+        ['boolean', true],
+        ['zero', 0],
+        ['negative', -1],
+      ])('teamId as %s returns 400', async (_, teamId) => {
+        const res = await getSetupVersionRequest(teamId, 1, 1)
+
+        expect(res.statusCode).toBe(400)
+      })
+    })
+
+    describe('weekendId invalid returns 400', () => {
+      test.each([
+        ['string', 'one'],
+        ['float', 1.1],
+        ['boolean', true],
+        ['zero', 0],
+        ['negative', -1],
+      ])('weekendId as %s returns 400', async (_, weekendId) => {
+        const { team } = await givenQualifyingWeekend(app)
+
+        const res = await getSetupVersionRequest(team.body.id, weekendId, 1)
+
+        expect(res.statusCode).toBe(400)
+      })
+    })
+
+    describe('setupVersionRequestId invalid returns 400', () => {
+      test.each([
+        ['string', 'one'],
+        ['float', 1.1],
+        ['boolean', true],
+        ['zero', 0],
+        ['negative', -1],
+      ])('setupVersionRequestId as %s returns 400', async (_, setupVersionRequestId) => {
+        const { team, weekend } = await givenQualifyingWeekend(app)
+
+        const res = await getSetupVersionRequest(team.body.id, weekend.body.id, setupVersionRequestId)
+
+        expect(res.statusCode).toBe(400)
+      })
+    })
+  })
+
+  // Existing resource checks
+  describe('existing resource checks', () => {
+    test('team not found returns 404', async () => {
+      const res = await getSetupVersionRequest(999, 1, 1)
+
+      expect(res.statusCode).toBe(404)
+    })
+
+    test('weekend not found returns 404', async () => {
+      const { team } = await givenQualifyingWeekend(app)
+
+      const res = await getSetupVersionRequest(team.body.id, 999, 1)
+
+      expect(res.statusCode).toBe(404)
+    })
+
+    test('setupVersionRequest not found returns 404', async () => {
+      const { team, weekend } = await givenQualifyingWeekend(app)
+
+      const res = await getSetupVersionRequest(team.body.id, weekend.body.id, 999)
+
+      expect(res.statusCode).toBe(404)
+    })
+
+    test('setupVersionRequest from another team returns 404', async () => {
+      const first = await givenQualifyingWeekend(app)
+      const secondTeam = await postTeam(app, { name: 'Ferrari' })
+      const secondWeekend = await postWeekend(app, secondTeam.body.id, { name: 'Japan' })
+      await advanceP1ToQ1(app, secondTeam.body.id, secondWeekend.body.id)
+      const created = await postSetupVersionRequest(first.team.body.id, first.weekend.body.id)
+
+      const res = await getSetupVersionRequest(secondTeam.body.id, secondWeekend.body.id, created.body.id)
+
+      expect(res.statusCode).toBe(404)
+    })
+
+    test('setupVersionRequest from another weekend returns 404', async () => {
+      const { team, weekend } = await givenQualifyingWeekend(app)
+      const otherWeekend = await postWeekend(app, team.body.id, { name: 'Japan' })
+      await advanceP1ToQ1(app, team.body.id, otherWeekend.body.id)
+      const created = await postSetupVersionRequest(team.body.id, weekend.body.id)
+
+      const res = await getSetupVersionRequest(team.body.id, otherWeekend.body.id, created.body.id)
+
+      expect(res.statusCode).toBe(404)
     })
   })
 })

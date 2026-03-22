@@ -22,7 +22,12 @@ async function listSetupVersionRequests(app, teamId, weekendId) {
     return request(app).get(`/teams/${teamId}/weekends/${weekendId}/setupVersionsRequests`)
 }
 
+async function getSetupVersionRequest(app, teamId, weekendId, setupVersionRequestId) {
+    return request(app).get(`/teams/${teamId}/weekends/${weekendId}/setupVersionsRequests/${setupVersionRequestId}`)
+}
+
 module.exports = {
+    getSetupVersionRequest,
     postSetupVersionRequest,
     postAcceptSetupVersionRequest,
     postDeclineSetupVersionRequest,

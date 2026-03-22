@@ -7,7 +7,7 @@ function mapErrorToHttp(res, err) {
     return res.status(403).json({ error: { code: 403, message: err.message } })
   }
 
-  if (['TEAM_NOT_FOUND', 'WEEKEND_NOT_FOUND', 'SETUP_VERSION_REQUEST_NOT_FOUND'].includes(err.code)) {
+  if (['TEAM_NOT_FOUND', 'WEEKEND_NOT_FOUND', 'SETUP_VERSION_NOT_FOUND', 'SETUP_VERSION_REQUEST_NOT_FOUND'].includes(err.code)) {
     return res.status(404).json({ error: { code: 404, message: err.message } })
   }
 

@@ -18,6 +18,19 @@ exports.listSetupVersionsRequestsForWeekend = (req, res) => {
     })
 }
 
+exports.getSetupVersionRequest = (req, res) => {
+    let { teamId, weekendId, setupVersionRequestId } = req.params
+
+    return withErrorHandling(res, () => {
+        teamId = parsePositiveIntId(teamId, 'team')
+        weekendId = parsePositiveIntId(weekendId, 'weekend')
+        setupVersionRequestId = parsePositiveIntId(setupVersionRequestId, 'setupVersionRequest')
+
+        const request = setupVersionsRequestsService.getSetupVersionRequest(teamId, weekendId, setupVersionRequestId)
+        return res.status(200).json(request)
+    })
+}
+
 exports.acceptSetupVersionRequest = (req, res) => {
     /**
      * Shape Validation:

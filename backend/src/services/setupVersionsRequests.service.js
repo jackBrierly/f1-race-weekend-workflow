@@ -59,6 +59,18 @@ exports.listSetupVersionsRequestsForWeekend = (teamId, weekendId) => {
   return setupVersionsRequestsModel.listSetupVersionsRequestsForWeekend(weekendId)
 }
 
+exports.getSetupVersionRequest = (teamId, weekendId, setupVersionRequestId) => {
+  assertTeamWeekendExists(teamId, weekendId)
+
+  const exists = setupVersionsRequestsModel.setupVersionRequestExistsForWeekend(setupVersionRequestId, weekendId)
+  if (!exists) throwAppError('Setup Version Request not found for this teams weekend', 'SETUP_VERSION_REQUEST_NOT_FOUND')
+
+  const request = setupVersionsRequestsModel.getRequest(setupVersionRequestId)
+  if (!request) throwAppError('Setup Version Request not found', 'SETUP_VERSION_REQUEST_NOT_FOUND')
+
+  return request
+}
+
 exports.createSetupVersionRequest = (teamId, weekendId, requestedBy, requestedByRole, requestedTo, requestedToRole, parameters) => {
   assertTeamWeekendExists(teamId, weekendId)
   assertParcFermeStage(weekendId)

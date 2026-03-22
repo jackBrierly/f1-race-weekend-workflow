@@ -84,3 +84,27 @@ exports.listSetupVersionsForWeekend = (teamId, weekendId) => {
 
     return setupVersionsModel.listSetupVersionsForWeekend(weekendId)
 }
+
+exports.getSetupVersion = (teamId, weekendId, setupVersionId) => {
+    if (!teamsModel.teamExistsById(teamId)) {
+        const err = new Error('Team not found')
+        err.code = 'TEAM_NOT_FOUND'
+        throw err
+    }
+
+    if (!weekendsModel.weekendExistsForTeam(weekendId, teamId)) {
+        const err = new Error('Weekend not found for this team')
+        err.code = 'WEEKEND_NOT_FOUND'
+        throw err
+    }
+
+    const setupVersion = setupVersionsModel.findSetupVersionByTeamWeekendAndId(teamId, weekendId, setupVersionId)
+
+    if (!setupVersion) {
+        const err = new Error('Setup Version not found for this teams weekend')
+        err.code = 'SETUP_VERSION_NOT_FOUND'
+        throw err
+    }
+
+    return setupVersion
+}

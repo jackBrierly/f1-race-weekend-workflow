@@ -52,7 +52,21 @@ function listSetupVersionsForWeekend(req, res) {
     })
 }
 
+function getSetupVersion(req, res) {
+    let { teamId, weekendId, setupVersionId } = req.params
+
+    return withErrorHandling(res, () => {
+        teamId = parsePositiveIntId(teamId, 'team')
+        weekendId = parsePositiveIntId(weekendId, 'weekend')
+        setupVersionId = parsePositiveIntId(setupVersionId, 'setupVersion')
+
+        const setupVersion = setupVersionsService.getSetupVersion(teamId, weekendId, setupVersionId)
+        return res.status(200).json(setupVersion)
+    })
+}
+
 module.exports = {
     createSetupVersion,
+    getSetupVersion,
     listSetupVersionsForWeekend,
 }

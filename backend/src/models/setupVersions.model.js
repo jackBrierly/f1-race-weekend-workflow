@@ -39,6 +39,14 @@ function listSetupVersionsForWeekend(weekendId) {
     return setupVersions.filter((setupVersion) => setupVersion.weekendId === weekendId)
 }
 
+function findSetupVersionByTeamWeekendAndId(teamId, weekendId, setupVersionId) {
+    return setupVersions.find((setupVersion) =>
+        setupVersion.teamId === teamId
+        && setupVersion.weekendId === weekendId
+        && setupVersion.id === setupVersionId
+    ) || null
+}
+
 function resetSetupVersions() {
     setupVersions.length = 0
     nextSetupVersionId = 1
@@ -134,6 +142,7 @@ module.exports = {
     initialiseSetupVersion,
     canCreateSetup,
     createSetupVersion,
+    findSetupVersionByTeamWeekendAndId,
     listSetupVersionsForWeekend,
     resetSetupVersions,
 }

@@ -26,8 +26,13 @@ async function listSetupVersions(app, teamId, weekendId) {
     return request(app).get(`/teams/${teamId}/weekends/${weekendId}/setupVersions`)
 }
 
+async function getSetupVersion(app, teamId, weekendId, setupVersionId) {
+    return request(app).get(`/teams/${teamId}/weekends/${weekendId}/setupVersions/${setupVersionId}`)
+}
+
 module.exports = {
     baseParameters,
+    getSetupVersion,
     postSetupVersion,
     listSetupVersions,
 }

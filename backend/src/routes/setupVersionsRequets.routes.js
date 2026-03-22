@@ -23,6 +23,9 @@ router.post('/:setupVersionRequestId/decline', setupVersionsRequestsController.d
 // GET /setupVersionsRequests
 router.get('/', setupVersionsRequestsController.listSetupVersionsRequestsForWeekend)
 
+// GET /setupVersionsRequests/:setupVersionRequestId
+router.get('/:setupVersionRequestId', setupVersionsRequestsController.getSetupVersionRequest)
+
 // POST /setupVersions/:id/decline
 // Decline setup version request
 // router.post('/:setupVersionRequestId/decline', setupVersionsRequestsController.declineSetupVersionRequest)

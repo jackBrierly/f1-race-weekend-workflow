@@ -20,6 +20,9 @@ router.post('/', createSetupVersion)
 // Get all setup versions
 router.get('/', listSetupVersionsForWeekend)
 
+// GET /setupVersions/:setupVersionId
+router.get('/:setupVersionId', getSetupVersion)
+
 // we expore as router and not { router } so that the file exports the router directly
 // so when weekends.router calls const setupVersionsRouter = require('./setupVersions.routes')
 // that is assigning the router to setupVersionsRouter
